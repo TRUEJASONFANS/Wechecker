@@ -1,0 +1,60 @@
+package soot.we.android.test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import soot.we.android.MainThread;
+import soot.we.android.XML.EntityApplicationBase;
+import soot.we.android.XML.ProcessXML;
+import soot.we.android.component.SootConfig;
+import soot.we.android.log.AlarmLog;
+
+public class Test {
+
+	public static EntityApplicationBase app;
+	private static List<String> fileList;
+
+	public static void main(String[] args) throws IOException {
+		fileList = new ArrayList<String>();
+		String folderPath = "D:\\Users\\jason\\workspace\\ClassVars";
+		find(folderPath, "\\S+\\.apk");
+		assert (fileList.size() > 0);
+		String apkpath;
+		String sdkPlatform = "D:\\Document\\AndroidSdk\\sdk\\platforms";
+		AlarmLog.main();
+		for (String s : fileList) {
+			apkpath = s;
+			ProcessXML p = new ProcessXML();
+			p.handleAndroidXMLFile(apkpath);
+			app = p.getEntityApplicationBase();
+			app.printApplication();
+
+			SootConfig.setAndroidPlatform(sdkPlatform);
+			SootConfig.AkpPath = apkpath;
+			AlarmLog.writeToAlarm("FileName: " + s);
+			AlarmLog.writeToAlarm("*******************************************************************************");
+			// ********detecting started************
+			MainThread.run(args);
+		}
+	}
+
+	public static void find(String path, String reg) {
+		Pattern pat = Pattern.compile(reg);
+		File file = new File(path);
+		File[] arr = file.listFiles();
+		for (int i = 0; i < arr.length; i++) {
+			if (arr[i].isDirectory()) {
+				find(arr[i].getAbsolutePath(), reg);
+			}
+			Matcher mat = pat.matcher(arr[i].getAbsolutePath());
+			if (mat.matches()) {
+				fileList.add(arr[i].getAbsolutePath());
+				// System.out.println(arr[i].getAbsolutePath());
+			}
+		}
+	}
+}

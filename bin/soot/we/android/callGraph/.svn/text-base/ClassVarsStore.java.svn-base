@@ -1,0 +1,64 @@
+package soot.we.android.callGraph;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import soot.SootClass;
+import soot.SootField;
+import soot.jimple.Stmt;
+
+public class ClassVarsStore {
+	public Set<taitedEntityClassVarible> publicStaticVars;
+	public Set<taitedEntityClassVarible> publicNonStaticVars;
+	public Map<String, List<taitedEntityClassVarible>> privateStaticVars;
+	public Map<String,List<taitedEntityClassVarible>> privateNonStaticVars;
+	public ClassVarsStore() {
+		publicStaticVars = new  HashSet<taitedEntityClassVarible> ();
+		publicNonStaticVars = new  HashSet<taitedEntityClassVarible> ();
+		privateStaticVars = new  HashMap<String,List<taitedEntityClassVarible>>();
+		privateNonStaticVars = new  HashMap<String,List<taitedEntityClassVarible>>();
+	}
+	public ClassVarsStore(ClassVarsStore cstore){
+		
+		publicStaticVars = new  HashSet<taitedEntityClassVarible> ();
+		publicNonStaticVars = new  HashSet<taitedEntityClassVarible> ();
+		privateStaticVars = new  HashMap<String,List<taitedEntityClassVarible>>();
+		privateNonStaticVars = new  HashMap<String,List<taitedEntityClassVarible>>();
+		assign(cstore);
+	}
+	public void assign(ClassVarsStore classstoreBefore) {
+		// TODO Auto-generated method stub
+		this.publicStaticVars.clear();;
+		this.publicNonStaticVars.clear();
+		this.privateStaticVars.clear();
+		this.privateNonStaticVars.clear();
+		publicStaticVars.addAll(classstoreBefore.publicStaticVars);
+		publicNonStaticVars.addAll(classstoreBefore.publicNonStaticVars);
+		privateStaticVars.putAll(classstoreBefore.privateStaticVars);
+		privateNonStaticVars.putAll(classstoreBefore.privateNonStaticVars);
+	}
+	public void merge(ClassVarsStore classstoreAfterOnecallbackMethod) {
+		// TODO Auto-generated method stub
+		publicStaticVars.addAll(classstoreAfterOnecallbackMethod.publicStaticVars);
+		publicNonStaticVars.addAll(classstoreAfterOnecallbackMethod.publicNonStaticVars);
+		privateStaticVars.putAll(classstoreAfterOnecallbackMethod.privateStaticVars);
+		privateNonStaticVars.putAll(classstoreAfterOnecallbackMethod.privateNonStaticVars);
+		
+	}
+}
+class taitedEntityClassVarible{
+	public Stmt stmt;
+	public EntitySourceInf pre;
+	public SootField sf;
+	public SootClass sc;
+	public taitedEntityClassVarible(SootClass sc,SootField sf,Stmt stmt,EntitySourceInf s) {
+		this.sc = sc;
+		this.sf = sf;
+		this.stmt = stmt;
+		this.pre = s;
+	}
+	
+}

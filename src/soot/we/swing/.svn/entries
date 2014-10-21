@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   url="https://new-wechecker.googlecode.com/svn/trunk/WeChecker/src/soot/we/swing"
+   repos="https://new-wechecker.googlecode.com/svn"
+   kind="dir"
+   committed-rev="214"
+   last-author="truejasonxiefans@gmail.com"
+   name=""
+   revision="214"
+   committed-date="2014-06-10T06:12:51.737000Z"/>
+<entry
+   kind="file"
+   committed-rev="214"
+   checksum="14fc83132ff23348306155dd441db390"
+   last-author="truejasonxiefans@gmail.com"
+   name="ConfigurationFrame.java"
+   text-time="2014-06-10T04:21:59.423000Z"
+   committed-date="2014-06-10T06:12:51.737000Z"/>
+<entry
+   kind="file"
+   committed-rev="226"
+   checksum="9c47aa0b72c1f1dbc48134d4e0c749d6"
+   last-author="truejasonxiefans@gmail.com"
+   name="MyScreen.java"
+   revision="226"
+   text-time="2014-06-12T07:30:58.554000Z"
+   committed-date="2014-06-12T07:34:57.263000Z"/>
+</wc-entries>

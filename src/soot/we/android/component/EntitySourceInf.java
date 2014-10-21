@@ -1,0 +1,90 @@
+package soot.we.android.component;
+
+import soot.Value;
+import soot.jimple.Stmt;
+
+public class EntitySourceInf {
+	private Value source;
+	private Stmt stmt;
+	private EntitySourceInf Pre;
+	private String methodName;
+	private String ClassName;
+	private String ComponentName;
+	
+	public EntitySourceInf(Value source, Stmt stmt,EntitySourceInf pre, String methodName,
+			String className) {
+		this.source = source;
+		this.stmt = stmt;
+		this.Pre = pre;
+		this.methodName = methodName;
+		this.ClassName = className;
+		
+	}
+
+	public Value getSource() {
+		return source;
+	}
+	
+	public Stmt getStmt() {
+		return stmt;
+	}
+
+	public EntitySourceInf getPre() {
+		return Pre;
+	}
+
+	public String getMethodName() {
+		return methodName;
+	}
+
+	public String getClassName() {
+		return ClassName;
+	}
+
+	public void setSource(Value source) {
+		this.source = source;
+	}
+
+	public void setStmt(Stmt stmt) {
+		this.stmt = stmt;
+	}
+
+	public void setPre(EntitySourceInf pre) {
+		Pre = pre;
+	}
+
+	public void setMethodName(String methodName) {
+		this.methodName = methodName;
+	}
+
+	public void setClassName(String className) {
+		ClassName = className;
+	}
+
+	public void print() {
+		System.err.println("Source found: "+this.source.toString());
+		System.err.println("comming from: "+this.Pre.getSource().toString());
+	}
+
+	public boolean equalTo(EntitySourceInf e) {
+		// TODO Auto-generated method stub
+		if(!this.ClassName.equals(e.getClassName()))
+			return false;
+		if(!this.methodName.equals(e.getMethodName()))
+			return false;
+		if(!this.source.equals(e.getSource()))
+			return false;
+		if(!this.stmt.equals(e.getStmt()))
+			return false;
+		return true;
+	}
+
+	public String getComponentName() {
+		return ComponentName;
+	}
+
+	public void setComponentName(String componentName) {
+		ComponentName = componentName;
+	}
+
+}

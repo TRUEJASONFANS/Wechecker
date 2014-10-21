@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   url="https://new-wechecker.googlecode.com/svn/trunk/WeChecker/src/soot/we/android/resource"
+   repos="https://new-wechecker.googlecode.com/svn"
+   kind="dir"
+   committed-rev="118"
+   last-author="zengtian006@gmail.com"
+   name=""
+   revision="171"
+   uuid="8b0a755d-3f50-62cd-bf97-88d7c56357d5"
+   committed-date="2014-04-01T11:03:41.879864Z"/>
+<entry
+   kind="file"
+   committed-rev="212"
+   checksum="ef2eec1c1e06a267a1012047b0732d6f"
+   last-author="zengtian006@gmail.com"
+   name="ARSCFileParser.java"
+   revision="212"
+   text-time="2014-06-06T08:10:35.704000Z"
+   committed-date="2014-06-06T08:10:35.704735Z"/>
+<entry
+   kind="file"
+   committed-rev="212"
+   checksum="267b22974a7b7a27cb962b161bcfeafe"
+   last-author="zengtian006@gmail.com"
+   name="AbstractResourceParser.java"
+   revision="212"
+   text-time="2014-06-06T08:10:35.704000Z"
+   committed-date="2014-06-06T08:10:35.704735Z"/>
+<entry
+   kind="file"
+   committed-rev="212"
+   checksum="f694b575892299798fbc578255126eb4"
+   last-author="zengtian006@gmail.com"
+   name="IResourceHandler.java"
+   revision="212"
+   text-time="2014-06-06T08:10:35.704000Z"
+   committed-date="2014-06-06T08:10:35.704735Z"/>
+<entry
+   kind="file"
+   committed-rev="100"
+   checksum="b004161910aeb3b1cd71e880c3da300d"
+   last-author="zengtian006@gmail.com"
+   name="Layout.java"
+   text-time="2014-03-24T10:19:21.921000Z"
+   committed-date="2014-03-24T10:19:21.921932Z"/>
+<entry
+   kind="file"
+   committed-rev="212"
+   checksum="7dc80eb93d5dd7ca163c7d8ec3956112"
+   last-author="zengtian006@gmail.com"
+   name="LayoutControl.java"
+   revision="212"
+   text-time="2014-06-06T08:10:35.704000Z"
+   committed-date="2014-06-06T08:10:35.704735Z"/>
+<entry
+   kind="file"
+   committed-rev="212"
+   checksum="083ba275f2bc22dec5f6bcfea273aa2c"
+   last-author="zengtian006@gmail.com"
+   name="LayoutFileParser.java"
+   revision="212"
+   text-time="2014-06-06T08:10:35.704000Z"
+   committed-date="2014-06-06T08:10:35.704735Z"/>
+<entry
+   kind="file"
+   committed-rev="118"
+   checksum="75b334d39ff3e701b973ad064a427d78"
+   last-author="zengtian006@gmail.com"
+   name="SourceInfo.java"
+   text-time="2014-04-01T11:03:41.879000Z"
+   committed-date="2014-04-01T11:03:41.879864Z"/>
+</wc-entries>

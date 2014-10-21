@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   url="https://new-wechecker.googlecode.com/svn/trunk/WeChecker/src/soot/we/android/callGraph"
+   repos="https://new-wechecker.googlecode.com/svn"
+   kind="dir"
+   committed-rev="169"
+   last-author="zengtian006@gmail.com"
+   name=""
+   revision="171"
+   uuid="8b0a755d-3f50-62cd-bf97-88d7c56357d5"
+   committed-date="2014-05-09T09:35:21.472115Z"/>
+<entry
+   kind="file"
+   schedule="delete"
+   committed-rev="127"
+   checksum="55304a541e08616cc8594f361b14744e"
+   last-author="zengtian006@gmail.com"
+   name="AccessPath.java"
+   text-time="2014-04-08T11:36:19.240000Z"
+   committed-date="2014-04-08T11:36:19.240041Z"/>
+<entry
+   kind="file"
+   committed-rev="202"
+   checksum="aba7e8c6ce44e9899300445dc9907c98"
+   last-author="truejasonxiefans@gmail.com"
+   name="AliasTree.java"
+   revision="202"
+   text-time="2014-06-04T15:53:50.297000Z"
+   committed-date="2014-06-04T15:56:13.222000Z"/>
+<entry
+   kind="file"
+   committed-rev="200"
+   checksum="88cedbcdbc582deb523aa947767a2c63"
+   last-author="zengtian006@gmail.com"
+   name="AndroidLifeCycleCallGraph.java"
+   revision="200"
+   text-time="2014-06-04T14:28:19.127201Z"
+   committed-date="2014-06-04T14:28:19.127201Z"/>
+<entry
+   kind="file"
+   committed-rev="107"
+   checksum="550ce4ed29c72bb708ca344d02f01a57"
+   last-author="truejasonxiefans@gmail.com"
+   name="AndroidMethod.java"
+   text-time="2014-03-26T09:26:16.764000Z"
+   committed-date="2014-03-26T09:26:16.764636Z"/>
+<entry
+   kind="file"
+   committed-rev="219"
+   checksum="fffdc29aaeb5acf813216f761882a225"
+   last-author="truejasonxiefans@gmail.com"
+   name="BuildCallGraph.java"
+   revision="219"
+   text-time="2014-06-10T07:10:15.405000Z"
+   committed-date="2014-06-10T07:10:57.693000Z"/>
+<entry
+   kind="file"
+   committed-rev="193"
+   checksum="50155f1587af82baaf3191c137dc04c5"
+   last-author="truejasonxiefans@gmail.com"
+   name="ClassVarsStore.java"
+   revision="193"
+   text-time="2014-06-03T07:47:03.390000Z"
+   committed-date="2014-06-04T12:03:42.995000Z"/>
+<entry
+   kind="file"
+   committed-rev="145"
+   checksum="58fb74f62db408418083e87e2890553a"
+   last-author="zengtian006@gmail.com"
+   name="EasyTaintWrapper.java"
+   text-time="2014-04-21T03:20:36.954000Z"
+   committed-date="2014-04-21T03:20:36.954668Z"/>
+<entry
+   kind="file"
+   schedule="delete"
+   committed-rev="57"
+   checksum="6d66ab42845188aa90b581e26743314a"
+   last-author="zengtian006@gmail.com"
+   name="EntityNode.java"
+   text-time="2014-03-20T14:44:07.786000Z"
+   committed-date="2014-03-20T14:44:07.786518Z"/>
+<entry
+   kind="file"
+   committed-rev="146"
+   checksum="d6005f9f7ca7f70bf30fbc7194dfc362"
+   last-author="zengtian006@gmail.com"
+   name="EntityPolyMethod.java"
+   text-time="2014-04-21T03:21:09.552000Z"
+   committed-date="2014-04-21T03:21:09.552678Z"/>
+<entry
+   kind="file"
+   committed-rev="124"
+   checksum="3ffe5df784e0bd633b5e4c3d2a7e75c3"
+   last-author="zengtian006@gmail.com"
+   name="EntitySinkInf.java"
+   text-time="2014-04-06T16:30:40.140000Z"
+   committed-date="2014-04-06T16:30:40.140949Z"/>
+<entry
+   kind="file"
+   committed-rev="217"
+   checksum="e78e4b4e09dd584259d9bda592218c79"
+   last-author="truejasonxiefans@gmail.com"
+   name="EntitySourceInf.java"
+   revision="217"
+   text-time="2014-06-09T15:34:06.265000Z"
+   committed-date="2014-06-10T07:06:22.166000Z"/>
+<entry
+   kind="file"
+   committed-rev="141"
+   checksum="8f238fb716398940485365b4dac7f1a5"
+   last-author="zengtian006@gmail.com"
+   name="FlowAnalysisProblem.java"
+   text-time="2014-04-11T09:24:16.328000Z"
+   committed-date="2014-04-11T09:24:16.328005Z"/>
+<entry
+   kind="file"
+   committed-rev="196"
+   checksum="f1454dd6f8a70ad353b4d718a6fbef9f"
+   last-author="truejasonxiefans@gmail.com"
+   name="GetCallback.java"
+   revision="196"
+   text-time="2014-06-03T15:57:59.435000Z"
+   committed-date="2014-06-04T12:06:42.585000Z"/>
+<entry
+   kind="file"
+   committed-rev="173"
+   checksum="c81d349ad75293bbb30ea7bab6c5c5d2"
+   last-author="truejasonxiefans@gmail.com"
+   name="InvokMethodInfo.java"
+   revision="173"
+   text-time="2014-05-25T14:16:33.956000Z"
+   committed-date="2014-05-27T06:53:52.763000Z"/>
+<entry
+   kind="file"
+   schedule="delete"
+   committed-rev="106"
+   checksum="13e19acd5fe7770ce20cea3bdc6be344"
+   last-author="truejasonxiefans@gmail.com"
+   name="Myanalyzing.java"
+   text-time="2014-03-26T09:26:10.591000Z"
+   committed-date="2014-03-26T09:26:10.591793Z"/>
+<entry
+   kind="file"
+   committed-rev="204"
+   checksum="ef11b9d3d1c1b8779c3656089ce6a1af"
+   last-author="truejasonxiefans@gmail.com"
+   name="ProcessCfg.java"
+   revision="204"
+   text-time="2014-06-05T14:39:51.584000Z"
+   committed-date="2014-06-05T14:40:31.315000Z"/>
+<entry
+   kind="file"
+   committed-rev="106"
+   checksum="84c74c0dc70948b8a6e751eb311986de"
+   last-author="truejasonxiefans@gmail.com"
+   name="SootMethodAndClass.java"
+   text-time="2014-03-26T09:26:10.591000Z"
+   committed-date="2014-03-26T09:26:10.591793Z"/>
+<entry
+   kind="file"
+   committed-rev="127"
+   checksum="f9afec48a945bce230c9ad08ebdcbe9f"
+   last-author="zengtian006@gmail.com"
+   name="SootMethodRepresentationParser.java"
+   text-time="2014-04-08T11:36:19.240000Z"
+   committed-date="2014-04-08T11:36:19.240041Z"/>
+<entry
+   conflict-new="SourceSinkFinder.java.r215"
+   kind="file"
+   committed-rev="208"
+   checksum="e06a804a880d516ec0fae890fc400263"
+   conflict-wrk="SourceSinkFinder.java.mine"
+   last-author="zengtian006@gmail.com"
+   name="SourceSinkFinder.java"
+   conflict-old="SourceSinkFinder.java.r191"
+   revision="215"
+   text-time="2014-06-03T03:43:12.554000Z"
+   committed-date="2014-06-06T06:52:01.671576Z"/>
+</wc-entries>

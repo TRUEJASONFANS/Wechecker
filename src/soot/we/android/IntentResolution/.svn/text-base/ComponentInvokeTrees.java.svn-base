@@ -1,0 +1,25 @@
+package soot.we.android.IntentResolution;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import soot.we.android.component.EntityClass;
+/**
+ * The entrypoint component(which is exported) will be the rootnode of the InvokeTree;
+ * @author jason
+ *
+ */
+public class ComponentInvokeTrees {
+	public Set<ComponentInvokeTreeNode> roots;
+	public int deep;
+	public ComponentInvokeTrees(){
+		roots = new HashSet<ComponentInvokeTreeNode>();
+	}
+	public void addRootTreeNode(ComponentInvokeTreeNode r) {
+		roots.add(r);
+	}
+	
+}
+

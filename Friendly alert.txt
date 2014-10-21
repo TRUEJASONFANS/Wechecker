@@ -1,0 +1,145 @@
+
+<android.location.Location: double getLatitude()> ^ Your information -- Latitude -- may be leaked  
+<android.location.Location: double getLongitude()> ^ Your information -- Longitude -- may be leaked
+<android.telephony.TelephonyManager: java.lang.String getDeviceId()> ^ Your information -- DeviceId -- may be leaked 
+<android.telephony.TelephonyManager: java.lang.String getSubscriberId()> ^ Your information -- SubscriverId -- may be leaked
+<android.telephony.TelephonyManager: java.lang.String getSimSerialNumber()> ^ Your information -- SimSerialNumber -- may be leaked
+<android.telephony.TelephonyManager: java.lang.String getLine1Number()> ^ Your information -- Line1Number -- may be leaked
+<java.net.URLConnection: java.io.OutputStream getOutputStream()> ^ Your information -- URLConnection OutputStream -- may be leaked
+<java.net.URLConnection: java.io.InputStream getInputStream()> ^ Your information -- URLConnection InputStream -- may be leaked
+
+<org.apache.http.HttpResponse: org.apache.http.HttpEntity getEntity()> ^ Your information -- HttpResponse HttpEntity -- may be leaked
+<org.apache.http.util.EntityUtils: java.lang.String toString(org.apache.http.HttpEntity)> ^ Your information -- HttpResponse HttpEntity -- may be leaked
+<org.apache.http.util.EntityUtils: java.lang.String toString(org.apache.http.HttpEntity,java.lang.String)> ^ Your information -- HttpResponse HttpEntity -- may be leaked
+<org.apache.http.util.EntityUtils: byte[] toByteArray(org.apache.http.HttpEntity)> ^ Your information -- HttpResponse HttpEntity -- may be leaked
+<org.apache.http.util.EntityUtils: java.lang.String getContentCharSet(org.apache.http.HttpEntity)> ^ Your information -- HttpResponse HttpEntity -- may be leaked
+
+<android.content.Intent: java.lang.String getAction()> ^ Your information -- Intent.getAction -- may be exploited
+<android.content.Intent: boolean[] getBooleanArrayExtra(java.lang.String)> ^ Your information -- Intent.getBooleanArrayExtra -- may be exploited
+<android.content.Intent: boolean getBooleanExtra(java.lang.String, boolean)> ^ Your information -- Intent.getBooleanExtra -- may be exploited
+<android.content.Intent: android.os.Bundle getBundleExtra(java.lang.String)> ^ Your information -- Intent.getByteArrayExtra -- may be exploited
+<android.content.Intent: byte[] getByteArrayExtra(java.lang.String)> ^ Your information -- Intent.getByteAr
+
+
+
+
+rayExtra -- may be exploited
+<android.content.Intent: byte getByteExtra(java.lang.String, byte)> ^ Your information -- Intent.getByteExtra -- may be exploited
+<android.content.Intent: java.util.Set getCategories()> ^ Your information -- Intent.getCategories -- may be exploited
+<android.content.Intent: char[] getCharArrayExtra(java.lang.String)> ^ Your information -- Intent.getCharArrayExtra -- may be exploited
+<android.content.Intent: char getCharExtra(java.lang.String, char)> ^ Your information -- Intent.getCharExtra -- may be exploited
+<android.content.Intent: java.lang.CharSequence[] getCharSequenceArrayExtra(java.lang.String)> ^ Your information -- Intent.getCharSequenceArrayExtra -- may be exploited
+<android.content.Intent: java.util.ArrayList getCharSequenceArrayListExtra(java.lang.String)> ^ Your information -- Intent.getCharSequenceArrayListExtra -- may be exploited
+<android.content.Intent: java.lang.CharSequence getCharSequenceExtra(java.lang.String)> ^ Your information -- Intent.getCharSequenceExtra -- may be exploited
+<android.content.Intent: android.content.ClipData getClipData()> ^ Your information -- ClipData -- may be exploited
+<android.content.Intent: android.content.ComponentName getComponent()> ^ Your information -- ComponentName -- may be exploited
+<android.content.Intent: android.net.Uri getData()> ^ Your information -- Uri -- may be exploited
+<android.content.Intent: java.lang.String getDataString()> ^ Your information -- Intent.getDataString -- may be exploited
+<android.content.Intent: double[] getDoubleArrayExtra(java.lang.String)> ^ Your information -- Intent.getDoubleArrayExtra -- may be exploited
+<android.content.Intent: double getDoubleExtra(java.lang.String, double)> ^ Your information -- Intent.getDoubleExtra -- may be exploited
+<android.content.Intent: android.os.Bundle getExtras()> ^ Your information -- Intent.getExtras -- may be exploited
+<android.content.Intent: int getFlags()> ^ Your information -- Intent.getFlags -- may be exploited
+<android.content.Intent: float[] getFloatArrayExtra(java.lang.String)> ^ Your information -- Intent.getFloatArrayExtra -- may be exploited
+<android.content.Intent: float getFloatExtra(java.lang.String, float)> ^ Your information -- Intent.getFloatExtra -- may be exploited
+<android.content.Intent: int[] getIntArrayExtra(java.lang.String)> ^ Your information -- Intent.getIntArrayExtra -- may be exploited
+<android.content.Intent: java.util.ArrayList getIntegerArrayListExtra(java.lang.String)> ^ Your information -- Intent.getIntegerArrayListExtra -- may be exploited
+<android.content.Intent: android.content.Intent getIntent(java.lang.String)> ^ Your information -- Intent.getIntent -- may be exploited
+<android.content.Intent: android.content.Intent getIntentOld(java.lang.String)> ^ Your information -- Intent.getIntentOld -- may be exploited
+<android.content.Intent: int getIntExtra(java.lang.String, int)> ^ Your information -- Intent.getIntExtra -- may be exploited
+<android.content.Intent: long[] getLongArrayExtra(java.lang.String)> ^ Your information -- Intent.getLongArrayExtra -- may be exploited
+<android.content.Intent: long getLongExtra(java.lang.String, long)> ^ Your information -- Intent.getLongExtra -- may be exploited
+<android.content.Intent: java.lang.String getPackage()> ^ Your information -- Intent.getPackage -- may be exploited
+<android.content.Intent: android.os.Parcelable[] getParcelableArrayExtra(java.lang.String)> ^ Your information -- Intent.getParcelableArrayExtra -- may be exploited
+<android.content.Intent: java.util.ArrayList getParcelableArrayListExtra(java.lang.String)> ^ Your information -- Intent.getParcelableArrayListExtra -- may be exploited
+<android.content.Intent: android.os.Parcelable getParcelableExtra(java.lang.String)> ^ Your information -- Intent.getParcelableExtra -- may be exploited
+<android.content.Intent: java.lang.String getScheme()> ^ Your information -- Intent.getScheme -- may be exploited
+<android.content.Intent: android.content.Intent getSelector()> ^ Your information -- Intent.getSelector -- may be exploited
+<android.content.Intent: java.io.Serializable getSerializableExtra(java.lang.String)> ^ Your information -- Intent.getSerializableExtra -- may be exploited
+<android.content.Intent: short[] getShortArrayExtra(java.lang.String)> ^ Your information -- Intent.getShortArrayExtra -- may be exploited
+<android.content.Intent: short getShortExtra(java.lang.String, short)> ^ Your information -- Intent.getShortExtra -- may be exploited
+<android.content.Intent: android.graphics.Rect getSourceBounds()> ^ Your information -- Intent.getSourceBounds -- may be exploited
+<android.content.Intent: java.lang.String[] getStringArrayExtra(java.lang.String)> ^ Your information -- Intent.getStringArrayExtra -- may be exploited
+<android.content.Intent: java.util.ArrayList getStringArrayListExtra(java.lang.String)> ^ Your information -- Intent.getStringArrayListExtra -- may be exploited
+<android.content.Intent: java.lang.String getStringExtra(java.lang.String)> ^ Your information -- Intent.getStringExtra -- may be exploited
+<android.content.Intent: java.lang.String getType()> ^ Your information -- Intent.getType -- may be exploited
+
+<android.os.Bundle: java.lang.Object get(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: boolean getBoolean(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: boolean getBoolean(java.lang.String,boolean)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: boolean[] getBooleanArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: android.os.Bundle getBundle(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: byte getByte(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.lang.Byte getByte(java.lang.String,byte)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: byte[] getByteArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: char getChar(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: char getChar(java.lang.String,char)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: char[] getCharArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.lang.CharSequence getCharSequence(java.lang.String,java.lang.CharSequence)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.lang.CharSequence getCharSequence(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.lang.CharSequence[] getCharSequenceArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.util.ArrayList getCharSequenceArrayList(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.lang.ClassLoader getClassLoader()> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: double getDouble(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: double getDouble(java.lang.String,double)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: double[] getDoubleArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: float getFloat(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: float getFloat(java.lang.String,float)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: float[] getFloatArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: int getInt(java.lang.String,int)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: int getInt(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: int[] getIntArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.util.ArrayList getIntegerArrayList(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: long getLong(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: long getLong(java.lang.String,long)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: long[] getLongArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: android.os.Parcelable getParcelable(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: android.os.Parcelable[] getParcelableArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.util.ArrayList getParcelableArrayList(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.io.Serializable getSerializable(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: short getShort(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: short getShort(java.lang.String,short)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: short[] getShortArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: android.util.SparseArray getSparseParcelableArray(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.lang.String getString(java.lang.String)> ^ Your information -- Bundle -- may be leaked
+<android.os.Bundle: java.util.ArrayList getStringArrayList(java.lang.String key)> ^ Your information -- Bundle -- may be leaked
+<android.app.PendingIntent: android.app.PendingIntent getActivity(android.content.Context,int,android.content.Intent,int)> ^ Your information -- PendingIntent activity -- may be leaked
+<android.app.PendingIntent: android.app.PendingIntent getActivity(android.content.Context,int,android.content.Intent,int,android.os.Bundle)> ^ Your information -- PendingIntent activity -- may be leaked
+<android.app.PendingIntent: android.app.PendingIntent getBroadcast(android.content.Context,int,android.content.Intent,int)> ^ Your information -- PendingIntent broadcast -- may be leaked
+<android.app.PendingIntent: android.app.PendingIntent getService(android.content.Context,int,android.content.Intent,int)> ^ Your information -- PendingIntent service -- may be leaked
+<android.media.AudioRecord: int read(short[],int,int)> ^ Your information -- AudioRecord -- may be leaked
+<android.media.AudioRecord: int read(byte[],int,int)> ^ Your information -- AudioRecord -- may be leaked_
+<android.media.AudioRecord: int read(java.nio.ByteBuffer,int)> ^ Your information -- AudioRecord -- may be leaked
+<android.location.LocationManager: android.location.Location getLastKnownLocation(java.lang.String)> ^ Your information -- LastKnowLocation -- may be leaked
+<android.content.pm.PackageManager: java.util.List getInstalledApplications(int)> ^ Your information -- InstalledApplications -- may be leaked
+<android.content.pm.PackageManager: java.util.List getInstalledPackages(int)> ^ Your information -- InstalledPackages -- may be leaked
+<android.content.pm.PackageManager: java.util.List queryIntentActivities(android.content.Intent,int)> ^ Your information -- queryIntentActivity -- may be leaked
+<android.content.pm.PackageManager: java.util.List queryIntentServices(android.content.Intent,int)> ^ Your information -- queryIntentServices -- may be leaked
+<android.content.pm.PackageManager: java.util.List queryBroadcastReceivers(android.content.Intent,int)>^ Your information -- queryBroadcatReceivers -- may be leaked
+<android.content.pm.PackageManager: java.util.List queryContentProviders(java.lang.String,int,int)> ^ Your information -- queryContentProviders -- may be leaked
+
+<android.os.Handler: android.os.Message obtainMessage()> ^ Your information -- Handler Message -- may be leaked
+<android.os.Handler: android.os.Message obtainMessage(int,int,int)> ^ Your information -- Handler Message -- may be leaked
+<android.os.Handler: android.os.Message obtainMessage(int,int,int,java.lang.Object)> ^ Your information -- Handler Message -- may be leaked
+<android.os.Handler: android.os.Message obtainMessage(int)> ^ Your information -- Handler Message -- may be leaked
+<android.os.Handler: android.os.Message obtainMessage(int,java.lang.Object)> ^ Your information -- Handler Message -- may be leaked
+
+<android.bluetooth.BluetoothAdapter: java.lang.String getAddress()> ^ Your information -- Address -- may be leaked
+<android.net.wifi.WifiInfo: java.lang.String: getMacAddress()> ^ Your information -- MacAddress -- may be leaked
+<java.util.Locale: java.lang.String getCountry()>^ Your information -- Country -- may be leaked
+<android.net.wifi.WifiInfo: java.lang.String getSSID()> ^ Your information -- SSID -- may be leaked
+<android.telephony.gsm.GsmCellLocation: int getCid()> ^ Your information -- Cid -- may be leaked
+<android.telephony.gsm.GsmCellLocation: int getLac()> ^ Your information -- Lac -- may be leaked
+
+<android.accounts.AccountManager: android.accounts.Account[] getAccounts()> ^ Your information -- Account -- may be leaked
+<java.util.Calendar: java.util.TimeZone getTimeZone()> ^ Your information -- TimeZone -- may be leaked
+<android.provider.Browser: android.database.Cursor getAllBookmarks()> ^ Your information -- Bookmark -- may be leaked
+<android.provider.Browser: android.database.Cursor getAllVisitedUrls()> ^ Your information -- VisitedUrl -- may be leaked
+<java.net.URL: java.net.URLConnection openConnection()> ^ Your information -- URLConnection openConnection -- may be leaked
+<android.content.ContentResolver: android.database.Cursor query(android.net.Uri,java.lang.String[],java.lang.String,java.lang.String[],java.lang.String)> ^ Your information -- Database -- may be leaked
+<android.content.ContentResolver: android.database.Cursor query(android.net.Uri,java.lang.String[],java.lang.String,java.lang.String[],java.lang.String,android.os.CancellationSignal)> ^ Your information -- Database -- may be leaked
+<android.database.Cursor: java.lang.String getString(int)> ^ Your information -- Database -- may be leaked
+<android.database.Cursor: double getDouble(int)> ^ Your information -- Database -- may be leaked
+<android.database.Cursor: float getFloat(int)> ^ Your information -- Database -- may be leaked
+<android.database.Cursor: int getInt(int)> ^ Your information -- Database -- may be leaked
+<android.database.Cursor: long getLong(int)> ^ Your information -- Database -- may be leaked
+<android.database.Cursor: short getShort(int)> ^ Your information -- Database -- may be leaked

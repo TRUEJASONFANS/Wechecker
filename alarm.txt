@@ -1,0 +1,36 @@
+FileName: C:\Users\jason\Desktop\testcase\Apk\com.nesnet.android.cantonese.apk
+
+*******************************************************************************
+
+permission:
+
+android.permission.INTERNET
+
+android.permission.WRITE_EXTERNAL_STORAGE
+
+Exported Component:com.nesnet.android.cantonese.CantonesePhone
+
+The app is secure
+
+Program running: 5479ms
+
+FileName: C:\Users\jason\Desktop\testcase\Apk\com.pccwmobile.wifitool.apk
+
+*******************************************************************************
+
+permission:
+
+android.permission.CHANGE_WIFI_STATE
+
+android.permission.INTERNET
+
+android.permission.ACCESS_NETWORK_STATE
+
+android.permission.ACCESS_WIFI_STATE
+
+Exported Component:com.pccwmobile.wifitool.WifiTool
+
+The app is secure
+
+Program running: 1206ms
+

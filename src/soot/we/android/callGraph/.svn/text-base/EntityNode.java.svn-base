@@ -1,0 +1,65 @@
+package soot.we.android.callGraph;
+
+import soot.toolkits.graph.UnitGraph;
+
+public class EntityNode {
+	private String curMethodName;
+	private UnitGraph curMethodUnitGraph;
+	private String next;
+	private int sequence;
+	private boolean hasNext;
+
+	public EntityNode(String methodName, String next, int sequence,
+			UnitGraph curMethodUnitGraph) {
+		super();
+		this.curMethodName = methodName;
+		this.next = next;
+		this.sequence = sequence;
+		this.curMethodUnitGraph = curMethodUnitGraph;
+	}
+
+	public EntityNode() {
+
+	}
+
+	public String getCurMethodName() {
+		return curMethodName;
+	}
+
+	public void setCurMethodName(String curMethodName) {
+		this.curMethodName = curMethodName;
+	}
+
+	public UnitGraph getCurMethodUnitGraph() {
+		return curMethodUnitGraph;
+	}
+
+	public void setCurMethodUnitGraph(UnitGraph curMethodUnitGraph) {
+		this.curMethodUnitGraph = curMethodUnitGraph;
+	}
+
+	public String getNext() {
+		return next;
+	}
+
+	public void setNext(String next) {
+		this.next = next;
+	}
+
+	public int getSequence() {
+		return sequence;
+	}
+
+	public void setSequence(int sequence) {
+		this.sequence = sequence;
+	}
+
+	public boolean isHasNext() {
+		return hasNext;
+	}
+
+	public void setHasNext(boolean hasNext) {
+		this.hasNext = hasNext;
+	}
+
+}

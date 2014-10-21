@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   url="https://new-wechecker.googlecode.com/svn/trunk/WeChecker/src/soot/we/android/component"
+   repos="https://new-wechecker.googlecode.com/svn"
+   kind="dir"
+   committed-rev="163"
+   last-author="truejasonxiefans@gmail.com"
+   name=""
+   revision="171"
+   uuid="8b0a755d-3f50-62cd-bf97-88d7c56357d5"
+   committed-date="2014-05-09T06:46:08.647582Z"/>
+<entry
+   kind="file"
+   committed-rev="216"
+   checksum="0ebfc8cae85d76db171615ae5a24f027"
+   last-author="truejasonxiefans@gmail.com"
+   name="EntityClass.java"
+   revision="216"
+   text-time="2014-06-08T05:46:23.267000Z"
+   committed-date="2014-06-10T07:06:04.809000Z"/>
+<entry
+   kind="file"
+   committed-rev="175"
+   checksum="b0275c843f2246b55ed6873dfac3ba38"
+   last-author="truejasonxiefans@gmail.com"
+   name="EntityClassVariable.java"
+   revision="175"
+   text-time="2014-05-24T04:54:18.120000Z"
+   committed-date="2014-05-27T06:54:28.907000Z"/>
+<entry
+   kind="file"
+   committed-rev="113"
+   checksum="20644e00a040a2880cc35593fed82696"
+   last-author="truejasonxiefans@gmail.com"
+   name="EntityMethod.java"
+   text-time="2014-03-27T07:56:08.770000Z"
+   committed-date="2014-03-27T07:56:08.770888Z"/>
+<entry
+   kind="file"
+   deleted="true"
+   name="EntityVariable.java"
+   revision="183"/>
+<entry
+   kind="file"
+   committed-rev="101"
+   checksum="6adbabd9161c2fe1d3dcc6365efd20b0"
+   last-author="truejasonxiefans@gmail.com"
+   name="GetCompJimpleClass.java"
+   text-time="2014-03-25T12:35:04.488136Z"
+   committed-date="2014-03-25T12:35:04.488136Z"/>
+<entry
+   kind="file"
+   committed-rev="101"
+   checksum="36396bedec10e87c0311f3b111339b2c"
+   last-author="truejasonxiefans@gmail.com"
+   name="ProcessJimpleClass.java"
+   text-time="2014-03-25T12:35:04.488000Z"
+   committed-date="2014-03-25T12:35:04.488136Z"/>
+<entry
+   kind="file"
+   committed-rev="190"
+   checksum="4b17dc999cb7dbcec05d3d8dc728b315"
+   last-author="truejasonxiefans@gmail.com"
+   name="SootConfig.java"
+   revision="190"
+   text-time="2014-06-04T04:56:20.939000Z"
+   committed-date="2014-06-04T12:01:28.905000Z"/>
+</wc-entries>

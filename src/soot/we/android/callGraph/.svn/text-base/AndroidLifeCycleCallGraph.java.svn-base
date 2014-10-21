@@ -1,0 +1,82 @@
+package soot.we.android.callGraph;
+
+import java.util.ArrayList;
+
+public class AndroidLifeCycleCallGraph {
+
+	// private ArrayList<String> CycleSequence1 = new ArrayList<String>();
+	// private ArrayList<String> CycleSequence2 = new ArrayList<String>();
+	// private ArrayList<String> CycleSequence3 = new ArrayList<String>();
+
+	public ArrayList<String[]> ActivitySequence = new ArrayList<String[]>();
+
+	public ArrayList<String[]> getActivityAndroidLifeCycleCallGraph() {
+
+		String[] temp1 = { "onCreate", "onStart", "onResume",
+				"ActivityRunning", "onPause", "onStop", "onDestroy" };
+
+		// String[] temp2 = { "onRestart", "onStart", "onResume",
+		// "ActivityRunning", "onPause", "onStop", "onDestroy" };
+		//
+		// String[] temp3 = { "onCreate", "onStart", "onResume",
+		// "ActivityRunning", "onPause", "onStop", "onRestart" };
+
+		ActivitySequence.add(temp1);
+		// ActivitySequence.add(temp2);
+		// ActivitySequence.add(temp3);
+		return ActivitySequence;
+	}
+
+	public ArrayList<String[]> getBroadcastAndroidLifeCycleCallGraph() {
+		String[] temp1 = { "onReceive" };
+		ActivitySequence.add(temp1);
+		return ActivitySequence;
+
+	}
+
+	public ArrayList<String[]> geServiceAndroidLifeCycleCallGraph() {
+		String[] temp1 = { "onCreate", "onStartCommand", "onLowMemory",
+				"onDestroy" };
+		// String[] temp2 = { "onCreate", "onBind", "onUnbind", "onLowMemory",
+		// "onDestroy" };
+		ActivitySequence.add(temp1);
+		// ActivitySequence.add(temp2);
+		return ActivitySequence;
+
+	}
+
+	// public void StringsToArraylist(ArrayList<String> Sequence, String[] temp)
+	// {
+	//
+	// for (int i = 0; i < temp.length; i++)
+	// Sequence.add(temp[i]);
+	// }
+
+	private static final String[] activityMethods = { "onCreate", "onStart",
+			"onResume", "ActivityRunning", "onPause", "onStop", "onDestroy",
+			"onRestart" };
+	private static final String[] SpecificCallBack = { "onKeyDown",
+			"onTouchEvent","onListItemClick" };
+
+	public static String[] getActivitymethods() {
+		return activityMethods;
+	}
+
+	public boolean isSpecificCallBack(String methodName) {
+		for (String lc : SpecificCallBack) {
+			if (lc.equals(methodName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean isLifeCycle(String methodName) {
+		for (String lc : activityMethods) {
+			if (lc.endsWith(methodName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+}

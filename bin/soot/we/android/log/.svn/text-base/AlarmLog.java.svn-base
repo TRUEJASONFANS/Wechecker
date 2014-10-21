@@ -1,0 +1,77 @@
+package soot.we.android.log;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+
+import org.jf.baksmali.main;
+
+public class AlarmLog {
+	public static BufferedReader bufread;
+	// 
+	private static String path = System.getProperty("user.dir") + "/alarm.txt";
+	private static String path2 = System.getProperty("user.dir") + "/commonAlarm.txt";
+	private static File filename = new File(path);
+	private static File filename2 = new File(path2);
+	
+	public static void main() throws IOException {
+		if (filename.exists()) {
+			filename.delete();
+			filename.createNewFile();
+			System.err.println(filename + " is created£¡");
+		}
+		
+		if (filename2.exists()) {
+			filename2.delete();
+			filename2.createNewFile();
+			System.err.println(filename2 + " is created£¡");
+		}
+	}
+	
+	public static void writeToCommonAlarm(String newStr)  {
+
+		BufferedWriter fw = null;
+		try {
+			fw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename2, true), "UTF-8"));
+			fw.append(newStr);
+			fw.newLine();
+			fw.flush(); //
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (fw != null) {
+				try {
+					fw.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	
+	public static void writeToAlarm(String newStr)  {
+
+		BufferedWriter fw = null;
+		try {
+			fw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename, true), "UTF-8"));
+			fw.append(newStr);
+			fw.newLine();
+			fw.flush(); //
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (fw != null) {
+				try {
+					fw.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+}

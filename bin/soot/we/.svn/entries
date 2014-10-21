@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   url="https://new-wechecker.googlecode.com/svn/trunk/WeChecker/src/soot/we"
+   repos="https://new-wechecker.googlecode.com/svn"
+   kind="dir"
+   committed-rev="169"
+   last-author="zengtian006@gmail.com"
+   name=""
+   revision="171"
+   uuid="8b0a755d-3f50-62cd-bf97-88d7c56357d5"
+   committed-date="2014-05-09T09:35:21.472115Z"/>
+<entry
+   kind="dir"
+   name="android"/>
+<entry
+   kind="dir"
+   name="swing"/>
+</wc-entries>

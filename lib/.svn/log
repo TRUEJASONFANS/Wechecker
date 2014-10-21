@@ -1,0 +1,53 @@
+<mv
+   name=".svn/tmp/props/soot.jar.svn-work"
+   dest=".svn/props/soot.jar.svn-work"/>
+<readonly
+   name=".svn/props/soot.jar.svn-work"/>
+<mv
+   name=".svn/tmp/prop-base/soot.jar.svn-base"
+   dest=".svn/prop-base/soot.jar.svn-base"/>
+<readonly
+   name=".svn/prop-base/soot.jar.svn-base"/>
+<modify-entry
+   name="soot.jar"
+   committed-rev="213"/>
+<modify-entry
+   name="soot.jar"
+   last-author="zengtian006@gmail.com"/>
+<modify-entry
+   name="soot.jar"
+   committed-date="2014-06-07T10:01:38.171823Z"/>
+<modify-entry
+   name="soot.jar"
+   uuid="8b0a755d-3f50-62cd-bf97-88d7c56357d5"/>
+<modify-entry
+   name="soot.jar"
+   absent="false"
+   deleted="false"
+   kind="file"
+   revision="213"/>
+<modify-entry
+   name="soot.jar"
+   url="https://new-wechecker.googlecode.com/svn/trunk/WeChecker/lib/soot.jar"/>
+<merge
+   arg3=".r171"
+   arg2=".svn/tmp/text-base/soot.jar.svn-base"
+   arg5=".mine"
+   arg4=".r213"
+   arg1=".svn/text-base/soot.jar.svn-base"
+   name="soot.jar"/>
+<modify-entry
+   name="soot.jar"
+   prop-time="working"/>
+<mv
+   name=".svn/tmp/text-base/soot.jar.svn-base"
+   dest=".svn/text-base/soot.jar.svn-base"/>
+<readonly
+   name=".svn/text-base/soot.jar.svn-base"/>
+<modify-entry
+   name="soot.jar"
+   checksum="fa5727eea4bb70cc936b43eef4b0ca53"/>
+<modify-wcprop
+   name="soot.jar"
+   propval="/svn/!svn/ver/213/trunk/WeChecker/lib/soot.jar"
+   propname="svn:wc:ra_dav:version-url"/>

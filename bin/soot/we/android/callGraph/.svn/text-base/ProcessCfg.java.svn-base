@@ -1,0 +1,400 @@
+package soot.we.android.callGraph;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Stack;
+
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Type;
+import soot.Unit;
+import soot.Value;
+import soot.jimple.DefinitionStmt;
+import soot.jimple.GotoStmt;
+import soot.jimple.IfStmt;
+import soot.jimple.Stmt;
+import soot.toolkits.graph.Block;
+import soot.toolkits.graph.BlockGraph;
+import soot.toolkits.graph.ExceptionalBlockGraph;
+import soot.toolkits.graph.UnitGraph;
+import soot.we.android.component.EntityClass;
+import soot.we.android.component.EntityMethod;
+import soot.we.android.log.AlarmLog;
+
+public class ProcessCfg {
+	/**
+	 * praraTaintedMap: indicated the tainted parameter in the method
+	 * invokestack : It's a stack to store the method has been invoked.The head
+	 * of stack is the last method which was invoked
+	 * 
+	 * @param easyTaintWrapper
+	 * @param g
+	 * @param curMethod
+	 * @param curClass
+	 * @param classlist
+	 * @param OldTaintedVariablelist
+	 * @param paraTaintMap
+	 * @param invokestack
+	 * @return
+	 */
+	public List<EntitySourceInf> TraverseCfg(EasyTaintWrapper easyTaintWrapper,
+			UnitGraph g, EntityMethod curMethod, EntityClass curClass,
+			List<EntityClass> classlist,
+			List<EntitySourceInf> OldTaintedVariablelist,
+			Map<Integer, EntitySourceInf> paraTaintMap,
+			Stack<InvokMethodInfo> invokestack) {
+		if(BuildCallGraph.processCfgtimes++>100)
+			return OldTaintedVariablelist;
+		AlarmLog.writeToAlarm("invokeMethod: "+ curClass.getclassName() + "--"+curMethod.getMethodName());
+		System.out.println("Class: " + curClass.getclassName());
+		System.out.println("Method: " + curMethod.getMethodName());
+
+		String curMethodName = curMethod.getMethodName();
+		String curClassName = curClass.getclassName();
+
+		SourceSinkFinder ssFinder = new SourceSinkFinder();
+		ssFinder.setEntityclass(curClass);
+		ssFinder.setEntitymethod(curMethod);
+		ssFinder.setUnitgraph(g);
+
+		// judge the class whether is innerclass or not
+		if (curClass.isInnerClass()) {
+			curClass.setOutclasses(curClassName, classlist);
+		}
+		// rebuild the local tainted list
+		List<EntitySourceInf> taintedLocalVars = ssFinder
+				.initializeTaintedLocalVarsList(OldTaintedVariablelist,paraTaintMap, curMethod, curClass, invokestack);
+		List<taitedEntityClassVarible> taintedClassVars = ssFinder
+				.initializeTaintedlistClassVarsList(curClass);
+
+		List<EntitySourceInf> returnVariables = new ArrayList<EntitySourceInf>();
+
+		List<EntityPolyMethod> polyMethodList = new ArrayList<EntityPolyMethod>();
+		List<Unit> unitList = reConstructCfg(g);
+
+		for (int i = 0; i < unitList.size(); i++) {
+			Unit u = unitList.get(i);
+			Stmt stmt = (Stmt) u;
+			System.out.println("      " + u.toString());
+			if (ssFinder.isDefinitionStmt(u)) {
+				if (taintedLocalVars.size() > 0) {
+					if (ssFinder.containLocalSourceAugmentsinRight(stmt,taintedLocalVars))
+						ssFinder.updateTaintedList(stmt, taintedLocalVars,curMethodName, curClassName, invokestack, "Add");
+					else if (ssFinder.containSourceAugmentsinLeft(stmt,taintedLocalVars))
+						ssFinder.updateTaintedList(stmt, taintedLocalVars,curMethodName, curClassName, invokestack,"Delete");
+					else if (ssFinder.containSourceAliasObject(stmt,
+							taintedLocalVars, curMethod, curClass)) {
+					}
+				}
+				if (taintedClassVars.size() > 0) {
+					ssFinder.checkClassSourceAugmentsinRight(stmt,taintedClassVars, taintedLocalVars, curMethodName,curClassName);
+				}
+			}
+			if (ssFinder.isIntraProceduralStmt(u)) { // IfStmt,GotoStmtTable,switchStmt,LookupSwitchStmt
+				// **********start****************
+				if (u instanceof IfStmt) {
+
+				}
+				if ((Stmt) u instanceof GotoStmt) {
+				}
+				// **************end****************
+			}
+			if (ssFinder.isInterProceduralStmt(stmt)) { // contain InvokeStmt
+
+				if (easyTaintWrapper.hasWrappedMethodsForClass(stmt, true,
+						false, false)) {
+					// System.out.println("taintedWrapper: " + u.toString());
+					ssFinder.CheckTaintedWrapper(g, stmt, taintedLocalVars,curMethod, curClass);
+
+				}
+				if (ssFinder.getSourceInfo(stmt) != null) {
+					ssFinder.addOriginalSource(stmt, u, taintedLocalVars,
+							curMethodName, curClassName);
+				}
+				if (ssFinder.isSink(stmt)) {
+					// check whether it has a path or not
+					ssFinder.checkAStmt(stmt, taintedLocalVars, curMethod,curClass);
+				}
+				if (ssFinder.isIntentRelatedStmt(stmt)) {
+					ssFinder.updateComponentInvokeTree(stmt, curMethod,curClass, classlist);
+				}
+				// If the Stmt is defined by developer
+				// 1.the parameters only contain the base type:int,string,float.
+				// 2.the parameters contain object defined by developer;
+				if (ssFinder.isDefinebyDeveloper(stmt, curClassName, classlist)) {
+					String declaringClassName = stmt.getInvokeExpr().getMethod().getDeclaringClass().getName();
+					SootMethod declaringMethod = stmt.getInvokeExpr().getMethod();
+					// *******************polymorphic *************************
+					if (declaringMethod.getName().equals("<init>")) {
+
+						SootClass declaredClass = stmt.getInvokeExpr().getMethod().getDeclaringClass();
+						EntityPolyMethod epm = ssFinder.findPolyMethod(declaredClass, declaringClassName, stmt,classlist);
+						if (epm != null) {
+							polyMethodList.add(epm);
+						}
+					} else {
+						declaringClassName = ssFinder.changeToRealClass(stmt,
+								polyMethodList, declaringClassName,
+								declaringMethod, classlist);
+					}
+
+					// ******************polymorphic end*******************
+					EntityClass declaringClass = locateDeclaringClass(
+							declaringClassName, classlist);
+					EntityMethod em = locateDeclaringMethod(declaringMethod,
+							declaringClass);
+					if (em == null)
+						continue;
+					Map<Integer, EntitySourceInf> AugTaintMap = ssFinder.getTaitedfParameters(stmt, taintedLocalVars);
+					Type subMethodRet = em.sootmethod.getReturnType();
+					// Save the invoke Method
+					invokestack.add(new InvokMethodInfo(curClass, curMethod, u));
+					if (subMethodRet.toString().equals("void")) {
+						List<EntitySourceInf> subMethodreturnSourceVars = TraverseCfg(
+								easyTaintWrapper, em.getCfgUnit(), em,
+								declaringClass, classlist, taintedLocalVars,
+								AugTaintMap, invokestack);
+						if (subMethodreturnSourceVars != null&&subMethodreturnSourceVars.size()>0) {
+							subMethodreturnSourceVars.remove(subMethodreturnSourceVars.size() - 1);
+							taintedLocalVars.addAll(subMethodreturnSourceVars);
+						}
+					} else {
+						// **************start************
+						Value lv = null;
+						Value rv;
+						if (stmt instanceof DefinitionStmt) {
+							lv = ((DefinitionStmt) stmt).getLeftOp();
+						}
+						// ***************end*************
+						List<EntitySourceInf> subMethodreturnSourceVars = TraverseCfg(
+								easyTaintWrapper, em.getCfgUnit(), em,
+								declaringClass, classlist, taintedLocalVars,
+								AugTaintMap, invokestack);
+						if (subMethodreturnSourceVars != null&&subMethodreturnSourceVars.size()>0) {
+							String isTainted = subMethodreturnSourceVars.get(subMethodreturnSourceVars.size() - 1).getMethodName();
+							if (isTainted.equals("tainted")&& subMethodreturnSourceVars.size() > 1) {
+								// ***********start*******
+								subMethodreturnSourceVars.remove(subMethodreturnSourceVars.size() - 1);
+								taintedLocalVars.addAll(subMethodreturnSourceVars);
+								rv = subMethodreturnSourceVars.get(subMethodreturnSourceVars.size() - 1).getSource();
+								if (rv != null && lv != null) {
+									ssFinder.updateTaintedList(stmt, lv, rv,taintedLocalVars, curMethod,curClass, g);
+								}
+								// ************end*************
+							} else if (isTainted.equals("nontainted")&& subMethodreturnSourceVars.size() > 1) {
+								subMethodreturnSourceVars.remove(subMethodreturnSourceVars.size() - 1);
+								taintedLocalVars.addAll(subMethodreturnSourceVars);
+							}
+						}
+					}
+					invokestack.pop();
+				}
+
+			}
+			// deal with the returnStmt
+			if (ssFinder.isReturnStmt(stmt)) {
+				if (curMethodName.equals("<init>")) {
+					if (curClass.isInnerClass()) {
+						EntityMethod em = curClass.getstaticinitMethod();
+						if (em != null)
+							TraverseCfg(easyTaintWrapper, em.getCfgUnit(), em,curClass, classlist, taintedLocalVars,null, invokestack);
+					}
+				}
+				if (ssFinder.checkJReturnStmt(stmt, taintedLocalVars)) {
+					returnVariables.addAll(taintedLocalVars);
+					returnVariables.add(new EntitySourceInf(null, null, null,"tainted", ""));
+					return returnVariables;
+				} else if ((i == unitList.size() - 1)) {
+					returnVariables.addAll(taintedLocalVars);
+					returnVariables.add(new EntitySourceInf(null, null, null,"nontainted", ""));
+					return returnVariables;
+				} else {
+					continue;
+				}
+			}
+
+		}
+		return null;
+	}
+
+	public static boolean isMethodContain(SootMethod method, String className,
+			List<EntityClass> classlist) {
+		EntityClass ec = locateDeclaringClass(className, classlist);
+		if (ec != null) {
+			EntityMethod em = locateDeclaringMethod(method, ec);
+			if (em != null) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
+
+	}
+
+	public static EntityClass locateDeclaringClass(String declaringClassName,
+			List<EntityClass> classlist) {
+		for (EntityClass ec : classlist)
+			if (ec.getclassName().equals(declaringClassName))
+				return ec;
+
+		return null;
+	}
+
+	public static boolean isContain(String className,
+			List<EntityClass> eCompClassList) {
+		for (EntityClass eCompClass : eCompClassList)
+			if (eCompClass.getclassName().equals(className))
+				return true;
+		return false;
+	}
+
+	private static EntityMethod locateDeclaringMethod(
+			SootMethod declaringMethod, EntityClass declaringClass) {
+		if (declaringClass.getMethodList() != null) {
+			for (EntityMethod em : declaringClass.getMethodList())
+
+				if (em.getMethodName().equals(declaringMethod.getName())) {
+					List<Type> list1 = em.getCfgUnit().getBody().getMethod()
+							.getParameterTypes();
+					List<Type> list2 = declaringMethod.getParameterTypes();
+
+					if ((list1.equals(list2))
+							|| (list1.isEmpty() && list2.isEmpty())) {
+						return em;
+					}
+
+				}
+		}
+		return null;
+	}
+
+	public void loop(int blockn, LinkedList<Integer> list, List<Integer> li,
+			List<Block> blockLs) {
+		if (!blockLs.get(blockn).getSuccs().isEmpty()
+				&& blockLs.get(blockn).getSuccs().size() > 1) {
+			boolean sequn = true;
+			int j = blockLs.get(blockn).getSuccs().size();
+
+			for (int i = 0; i < j; i++) {
+				Block block = blockLs.get(blockn).getSuccs().get(i);
+				if (!(block.getTail() instanceof IfStmt)
+						&& !(block.getTail() instanceof GotoStmt)
+						&& !(block.getTail().toString().contains("return"))) {
+					sequn = false;
+				}
+			}
+			if (!sequn) {
+				for (Block b : blockLs.get(blockn).getSuccs()) {
+					int n = b.getIndexInMethod();
+					if (!li.contains(n) && !list.contains(n)) {
+						list.add(n);
+						loop(n, list, li, blockLs);
+					}
+				}
+			} else {
+				for (int i = blockLs.get(blockn).getSuccs().size() - 1; i >= 0; i--) {
+					Block b = blockLs.get(blockn).getSuccs().get(i);
+					int n = b.getIndexInMethod();
+					if (!li.contains(n) && !list.contains(n)) {
+						list.add(n);
+						loop(n, list, li, blockLs);
+					}
+				}
+			}
+		}
+	}
+
+	public List<Unit> reConstructCfg(UnitGraph g) {
+
+		HashMap<Integer, List<Integer>> hm = new HashMap<Integer, List<Integer>>();
+		BlockGraph blockGraph = new ExceptionalBlockGraph(g.getBody());
+		List<Block> blockLs = blockGraph.getBlocks();
+		for (Block b : blockLs) {
+			System.out.println(b.toString());
+		}
+		for (int i = 0; i < blockLs.size(); i++) {
+			if (blockLs.get(i).getTail() instanceof IfStmt) {// Analyze the last
+																// Stmt of a
+																// bloack
+				int j = i;
+				List<Integer> li;
+				if ((li = hm.get(i)) == null)
+					li = new ArrayList<Integer>();
+				li.add(i);
+				while (j < blockLs.size()
+						&& blockLs.get(j + 1).getHead() instanceof IfStmt) {
+					j++;
+					li.add(j);
+				}
+				hm.put(i, li);
+				i = j;
+			}
+		}
+		for (Integer i : hm.keySet()) {
+			List<Integer> li = hm.get(i);
+			System.out.print(i + ":");
+			for (Integer j : li) {
+				System.out.print(j + " ");
+			}
+			System.out.println();
+		}
+		// List<Integer> ll = new ArrayList<Integer>();
+		LinkedList<Integer> list = new LinkedList<Integer>();
+		for (Integer i : hm.keySet()) {
+			List<Integer> li = hm.get(i);
+			for (int j = 0; j < li.size(); j++) {
+				int blockn = li.get(j);
+				if (!list.contains(blockn)) {
+					list.add(blockn);
+					loop(blockn, list, li, blockLs);
+				}
+			}
+		}
+		if (!list.isEmpty() && list.size() > 0) {
+			if (list.get(0) != 0) {
+				for (int i = 0; i < list.get(0); i++) {
+					list.add(i, i);
+				}
+			}
+			if ((blockLs.get(list.get(list.size() - 1)).getSuccs().size() == 1)) {
+				int lastBlock = blockLs.get(list.get(list.size() - 1))
+						.getSuccs().get(0).getIndexInMethod();
+				if (!list.contains(lastBlock)) {
+					list.add(blockLs.get(list.get(list.size() - 1)).getSuccs()
+							.get(0).getIndexInMethod());
+				}
+			}
+		} else {
+			for (Block b : blockLs) {
+				list.add(b.getIndexInMethod());
+			}
+
+		}
+		for (int i = 0; i < list.size(); i++) {
+			int s = list.get(i);
+			Unit u = blockLs.get(s).getTail();
+			if (u.toString().contains("return") && u.toString().startsWith("r")) {
+				list.remove(i);
+				list.addLast(s);
+			}
+		}
+		for (Integer i : list) {
+			System.out.println("heihei: " + i.toString());
+		}
+		List<Unit> unitList = new ArrayList<Unit>();
+		for (int i = 0; i < list.size(); i++) {
+			int s = list.get(i);
+			Unit uu = blockLs.get(s).getHead();
+			unitList.add(uu);
+			while (uu != blockLs.get(s).getTail()) {
+				uu = blockLs.get(s).getSuccOf(uu);
+				unitList.add(uu);
+			}
+		}
+		return unitList;
+	}
+}

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   url="https://new-wechecker.googlecode.com/svn/trunk/WeChecker/lib"
+   repos="https://new-wechecker.googlecode.com/svn"
+   kind="dir"
+   committed-rev="3"
+   last-author="truejasonxiefans@gmail.com"
+   name=""
+   revision="171"
+   uuid="8b0a755d-3f50-62cd-bf97-88d7c56357d5"
+   committed-date="2014-03-16T04:29:35.282217Z"/>
+<entry
+   kind="file"
+   committed-rev="3"
+   checksum="17f1211b41ab8efe3885c9afe3ee32ae"
+   last-author="truejasonxiefans@gmail.com"
+   name="AXMLPrinter2.jar"
+   text-time="2014-03-16T04:29:35.282000Z"
+   committed-date="2014-03-16T04:29:35.282217Z"
+   prop-time="2014-05-21T11:27:35.697000Z"/>
+<entry
+   kind="file"
+   committed-rev="3"
+   checksum="7d0bef03ba7e12866260761f6dd0ba6c"
+   last-author="truejasonxiefans@gmail.com"
+   name="soot.jar"
+   text-time="2014-03-16T04:29:35.282000Z"
+   committed-date="2014-03-16T04:29:35.282217Z"
+   prop-time="2014-05-21T11:27:35.654000Z"/>
+</wc-entries>

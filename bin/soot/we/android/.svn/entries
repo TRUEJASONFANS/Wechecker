@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   url="https://new-wechecker.googlecode.com/svn/trunk/WeChecker/src/soot/we/android"
+   repos="https://new-wechecker.googlecode.com/svn"
+   kind="dir"
+   committed-rev="169"
+   last-author="zengtian006@gmail.com"
+   name=""
+   revision="171"
+   uuid="8b0a755d-3f50-62cd-bf97-88d7c56357d5"
+   committed-date="2014-05-09T09:35:21.472115Z"/>
+<entry
+   kind="dir"
+   name="IntentResolution"/>
+<entry
+   kind="file"
+   committed-rev="209"
+   checksum="bc1edabcebbc388c50fbc42aedfcdd66"
+   last-author="zengtian006@gmail.com"
+   name="MainThread.java"
+   revision="209"
+   text-time="2014-06-06T08:08:00.587000Z"
+   committed-date="2014-06-06T08:08:00.587163Z"/>
+<entry
+   kind="dir"
+   name="XML"/>
+<entry
+   kind="dir"
+   name="callGraph"/>
+<entry
+   kind="dir"
+   name="component"/>
+<entry
+   kind="dir"
+   name="log"/>
+<entry
+   kind="dir"
+   name="parser"/>
+<entry
+   kind="dir"
+   name="resource"/>
+<entry
+   kind="dir"
+   name="test"/>
+<entry
+   kind="dir"
+   name="transformer"/>
+</wc-entries>

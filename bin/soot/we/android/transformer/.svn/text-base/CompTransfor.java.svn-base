@@ -1,0 +1,101 @@
+package soot.we.android.transformer;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import soot.Body;
+import soot.BodyTransformer;
+import soot.Scene;
+import soot.SootClass;
+import soot.SootField;
+import soot.SootMethod;
+import soot.jimple.toolkits.callgraph.CHATransformer;
+import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.graph.UnitGraph;
+import soot.we.android.IntentResolution.TaintedIntent;
+import soot.we.android.XML.EntityApplicationBase;
+import soot.we.android.XML.EntityComponent;
+import soot.we.android.component.EntityClass;
+import soot.we.android.component.EntityMethod;
+import soot.we.android.component.EntityClassVariable;
+import soot.we.android.component.GetCompJimpleClass;
+import soot.we.android.component.ProcessJimpleClass;
+import soot.we.android.test.Test;
+
+public class CompTransfor extends soot.SceneTransformer {
+	public static List<EntityMethod> eCfgList = new ArrayList<EntityMethod>();
+
+	@Override
+	protected void internalTransform(String arg0, Map<String, String> arg1) {
+		CHATransformer.v().transform();
+
+		EntityApplicationBase application = Test.app;
+		
+		List<SootClass> applicationClass = ProcessJimpleClass.findApplicationClass();
+
+		for (int i = 0; i < applicationClass.size(); i++) {
+			SootClass sc = applicationClass.get(i);
+			//if(sc.isInterface()||sc.isPhantom()) continue;
+			EntityClass eClass = new EntityClass();
+			eClass.sootclass = sc;
+			eClass.taintedIntent = new HashSet<TaintedIntent>();
+			ConstructClass(sc, eClass);
+			GetCompJimpleClass.classList.add(eClass);
+		}
+	
+	}
+
+	/**
+	 * start extracting CFG of Each method in certain Class
+	 * 
+	 * @param sc
+	 * @param eClass
+	 */
+	private void ConstructClass(SootClass sc, EntityClass eClass) {
+
+		eClass.setclassName(sc.getName());
+		ArrayList<EntityComponent> tempcomps = Test.app.getComponents();
+		for (int i = 0; i < tempcomps.size(); i++) {
+			EntityComponent tcomponent = tempcomps.get(i);
+			if (sc.getName().equals(tcomponent.getComponnetName())) {
+				eClass.setEntryPointClass(tcomponent.getExported());
+				Test.app.map.put(tcomponent,eClass);
+			}
+		}
+		
+		List<EntityClassVariable> tempclassVariables = new ArrayList<EntityClassVariable>();
+		for (SootField sf : sc.getFields()) {
+			boolean isPublic=sf.isPublic();
+			boolean isStatic=sf.isStatic();
+			boolean isPrivate=sf.isPrivate();
+			EntityClassVariable tempVariable = new EntityClassVariable(sf.getType().toString(), sf.getSubSignature(),sf);
+			tempVariable.setPublic_modify(isPublic);
+			tempVariable.setPrivate_modify(isPrivate);
+			tempVariable.setStatic_modify(isStatic);
+			tempclassVariables.add(tempVariable);
+		}
+		eClass.setClassVariable(tempclassVariables);
+
+		List<EntityMethod> methodsList = new ArrayList<EntityMethod>();
+
+		List<SootMethod> methodList = sc.getMethods();
+		for (SootMethod sm : methodList) {
+			try {
+		    if(sm.isPhantom()) continue;
+			Body body = sm.retrieveActiveBody();
+			UnitGraph g = new ExceptionalUnitGraph(body);
+			EntityMethod method = new EntityMethod(body.getMethod().getName(),g);
+			method.sootmethod = sm;
+			methodsList.add(method);
+			eClass.setMethodList(methodsList);
+			}
+			catch(Exception e){
+				
+			}
+		}
+	}
+}
+

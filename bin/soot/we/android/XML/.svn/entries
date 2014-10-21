@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   url="https://new-wechecker.googlecode.com/svn/trunk/WeChecker/src/soot/we/android/XML"
+   repos="https://new-wechecker.googlecode.com/svn"
+   kind="dir"
+   committed-rev="210"
+   last-author="zengtian006@gmail.com"
+   name=""
+   revision="211"
+   uuid="8b0a755d-3f50-62cd-bf97-88d7c56357d5"
+   committed-date="2014-06-06T08:08:25.832474Z"/>
+<entry
+   kind="file"
+   committed-rev="186"
+   checksum="c8f9c937d02df16a6c92e25182d2cb4c"
+   last-author="truejasonxiefans@gmail.com"
+   name="EntityApplicationBase.java"
+   text-time="2014-05-28T17:42:06.048000Z"
+   committed-date="2014-06-03T15:22:58.429000Z"/>
+<entry
+   kind="file"
+   committed-rev="10"
+   checksum="b5062bce60bfc43b1b825639c3c84a7e"
+   last-author="truejasonxiefans@gmail.com"
+   name="EntityComponent.java"
+   text-time="2014-03-16T06:25:14.559000Z"
+   committed-date="2014-03-16T06:25:14.559923Z"/>
+<entry
+   kind="file"
+   committed-rev="10"
+   checksum="aaf5f22cbb8623849076cd443f3c0164"
+   last-author="truejasonxiefans@gmail.com"
+   name="EntityIntentFilter.java"
+   text-time="2014-03-16T06:25:14.559000Z"
+   committed-date="2014-03-16T06:25:14.559923Z"/>
+<entry
+   kind="file"
+   committed-rev="3"
+   checksum="bdbad6a11d1139f801bfc4c4c931b7aa"
+   last-author="truejasonxiefans@gmail.com"
+   name="EntityLayout.java"
+   text-time="2014-03-16T04:29:35.282000Z"
+   committed-date="2014-03-16T04:29:35.282217Z"/>
+<entry
+   kind="file"
+   committed-rev="210"
+   checksum="e93906740a158b918e1caf9cff7c7b25"
+   last-author="zengtian006@gmail.com"
+   name="ProcessLayout.java"
+   text-time="2014-06-06T08:08:25.832000Z"
+   committed-date="2014-06-06T08:08:25.832474Z"/>
+<entry
+   kind="file"
+   committed-rev="198"
+   checksum="c61d881c176eced9fce9e93103596f5e"
+   last-author="truejasonxiefans@gmail.com"
+   name="ProcessXML.java"
+   text-time="2014-06-04T12:34:47.746000Z"
+   committed-date="2014-06-04T14:05:44.749000Z"/>
+</wc-entries>

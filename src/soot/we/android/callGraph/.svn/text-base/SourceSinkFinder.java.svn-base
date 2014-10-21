@@ -1,0 +1,1413 @@
+package soot.we.android.callGraph;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.Stack;
+
+import soot.Local;
+import soot.PatchingChain;
+import soot.SootClass;
+import soot.SootField;
+import soot.SootMethod;
+import soot.Type;
+import soot.Unit;
+import soot.Value;
+import soot.ValueBox;
+import soot.JastAddJ.ClassInstanceExpr;
+import soot.jimple.ClassConstant;
+import soot.jimple.DefinitionStmt;
+import soot.jimple.GotoStmt;
+import soot.jimple.IfStmt;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.InvokeStmt;
+import soot.jimple.LookupSwitchStmt;
+import soot.jimple.ParameterRef;
+import soot.jimple.StaticFieldRef;
+import soot.jimple.Stmt;
+import soot.jimple.TableSwitchStmt;
+import soot.jimple.internal.JAssignStmt;
+import soot.jimple.internal.JIdentityStmt;
+import soot.jimple.internal.JInstanceFieldRef;
+import soot.jimple.internal.JInvokeStmt;
+import soot.jimple.internal.JReturnStmt;
+import soot.jimple.internal.JReturnVoidStmt;
+import soot.jimple.internal.JimpleLocal;
+import soot.toolkits.graph.UnitGraph;
+import soot.toolkits.scalar.FlowSet;
+import soot.we.android.MainThread;
+import soot.we.android.IntentResolution.ComponentInvokeGraphNode;
+import soot.we.android.IntentResolution.ComponentInvokeGraphNodeIntentPair;
+import soot.we.android.IntentResolution.IntentFinder;
+import soot.we.android.IntentResolution.IntentValue;
+import soot.we.android.IntentResolution.TaintedIntent;
+import soot.we.android.XML.EntityApplicationBase;
+import soot.we.android.XML.EntityComponent;
+import soot.we.android.XML.EntityIntentFilter;
+import soot.we.android.component.EntityClass;
+import soot.we.android.component.EntityMethod;
+import soot.we.android.log.AlarmLog;
+import soot.we.android.parser.PermissionMethodParser;
+import soot.we.android.resource.SourceInfo;
+import soot.we.android.test.Test;
+
+public class SourceSinkFinder {
+
+	public enum SourceType {
+		/**
+		 * Not a source
+		 */
+		NoSource,
+		/**
+		 * The data is obtained via a method call
+		 */
+		MethodCall,
+		/**
+		 * The data is retrieved through a callback parameter
+		 */
+		Callback,
+		/**
+		 * The data is read from a UI element
+		 */
+		UISource
+	}
+
+	private Map<String, AndroidMethod> sourceMethods;
+	private Map<String, AndroidMethod> sinkMethods;
+	private static final SourceInfo sourceInfo = new SourceInfo(true);
+	private UnitGraph unitgraph;
+	private EntityClass eclass;
+	private EntityMethod emethod;
+
+	public EntityClass getEntityclass() {
+		return eclass;
+	}
+
+	public void setEntityclass(EntityClass eclass) {
+		this.eclass = eclass;
+	}
+
+	public EntityMethod getEntitymethod() {
+		return emethod;
+	}
+
+	public void setEntitymethod(EntityMethod emethod) {
+		this.emethod = emethod;
+	}
+
+	public UnitGraph getUnitgraph() {
+		return unitgraph;
+	}
+
+	public void setUnitgraph(UnitGraph unitgraph) {
+		this.unitgraph = unitgraph;
+	}
+
+	public Map<String, AndroidMethod> getSourceMethods() {
+		return sourceMethods;
+	}
+
+	public Map<String, AndroidMethod> getSinkMethods() {
+		return sinkMethods;
+	}
+
+	public void calculateSourcesSinksEntrypoints(String sourceSinkFile)
+			throws IOException {
+		PermissionMethodParser parser = PermissionMethodParser
+				.fromFile(sourceSinkFile);
+		Set<AndroidMethod> sources = new HashSet<AndroidMethod>();
+		Set<AndroidMethod> sinks = new HashSet<AndroidMethod>();
+		for (AndroidMethod am : parser.parse()) {
+			if (am.isSource())
+				sources.add(am);
+			if (am.isSink())
+				sinks.add(am);
+		}
+		this.sourceMethods = new HashMap<String, AndroidMethod>();
+		for (AndroidMethod am : sources)
+			this.sourceMethods.put(am.getSignature(), am);
+
+		this.sinkMethods = new HashMap<String, AndroidMethod>();
+		for (AndroidMethod am : sinks)
+			this.sinkMethods.put(am.getSignature(), am);
+		System.out.println("Created a SourceSinkManager with "
+				+ this.sourceMethods.size() + " sources, "
+				+ this.sinkMethods.size() + " sinks ");
+		Set<String> key = sourceMethods.keySet();
+		// for (String string : key) {
+		// System.out.println("KEY: " + string);
+		// }
+	}
+
+	public int scanMethodForSourcesSinks(PatchingChain<Unit> units) {
+		int sinkCount = 0;
+		for (Unit u : units) {
+			Stmt s = (Stmt) u;
+			if (getSourceInfo(s) != null) {
+				// forwardProblem.addInitialSeeds(u,
+				// Collections.singleton(forwardProblem.zeroValue()));
+				System.out.println("****Source found: " + u);
+			}
+			if (isSink(s)) {
+				System.out.println("****Sink found: " + u);
+				sinkCount++;
+			}
+		}
+		return sinkCount;
+	}
+
+	public boolean isSink(Stmt sCallSite) {
+		assert sCallSite != null;
+		return sCallSite.containsInvokeExpr()
+				&& isSinkMethod(sCallSite.getInvokeExpr().getMethod());
+	}
+
+	public SourceInfo getSourceInfo(Stmt sCallSite) {
+		assert sCallSite != null;
+		if (!sCallSite.containsInvokeExpr())
+			return null;
+		return getSourceMethodInfo(sCallSite.getInvokeExpr().getMethod());
+	}
+
+	public SourceInfo getSourceMethodInfo(SootMethod sMethod) {
+		if (!MainThread.sourceMethods.containsKey(sMethod.toString()))
+			return null;
+		return sourceInfo;
+	}
+
+	public boolean isSinkMethod(SootMethod sMethod) {
+		return MainThread.sinkMethods.containsKey(sMethod.toString());
+	}
+
+	public boolean isdefinebyDeveloper(Stmt stmt) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public boolean isDefinitionStmt(Unit stmt) {
+		// TODO Auto-generated method stub
+		if (stmt instanceof DefinitionStmt) {
+			return true;
+		}
+		return false;
+	}
+
+	public boolean isReturnStmt(Unit stmt) {
+		// TODO Auto-generated method stub
+		if (stmt instanceof JReturnStmt || stmt instanceof JReturnVoidStmt) {
+			return true;
+		}
+		return false;
+	}
+
+	public boolean isIntraProceduralStmt(Unit u) {
+		if (u instanceof IfStmt || u instanceof LookupSwitchStmt
+				|| u instanceof TableSwitchStmt || u instanceof GotoStmt) {
+			return true;
+		}
+		return false;
+	}
+
+	public boolean isInterProceduralStmt(Stmt stmt) {
+		// TODO Auto-generated method stub
+		if (stmt.containsInvokeExpr())
+			return true;
+		else
+			return false;
+	}
+
+	public boolean isIntentRelatedStmt(Stmt sCallSite) {
+		assert sCallSite != null;
+		return sCallSite.containsInvokeExpr()
+				&& isIntentRelatedMethods(sCallSite.getInvokeExpr().getMethod());
+	}
+
+	public boolean isIntentRelatedMethods(SootMethod sm) {
+		return MainThread.intentRelatedMethods.containsKey(sm.toString());
+
+	}
+
+	public void updateComponentInvokeTree(Stmt stmt, EntityMethod curMethod,
+			EntityClass curClass, List<EntityClass> classes) {
+		if (curClass.getComponentInvokeTree() == null)
+			return;
+		int argCount = stmt.getInvokeExpr().getArgCount();
+
+		List<Value> argValues = stmt.getInvokeExpr().getArgs();
+		Value v = stmt.getInvokeExpr().getUseBoxes().get(0).getValue();
+		if (argCount == 2) {// explict way to use intent
+			Value tempV1 = argValues.get(0);
+			Value tempV2 = argValues.get(1);
+			if (tempV1.getType().equals(curClass.sootclass.getType())) {
+				if (tempV2 instanceof ClassConstant) {
+					ClassConstant tv2classconstant = (ClassConstant) tempV2;
+					String methodname = tv2classconstant.getValue();
+					if (methodname.contains("/")) {
+						methodname = methodname.replace('/', '.');
+					}
+					for (EntityClass eclass : classes) {
+						if (eclass.getclassName().equals(methodname)) {
+							if (curClass.getComponentInvokeTree().Addchildren(
+									eclass, v, curMethod.getMethodName(),
+									curClass.getclassName())) {
+								AlarmLog.writeToAlarm("a intent:");
+								AlarmLog.writeToAlarm(curClass.getclassName()
+										+ "->" + eclass.getclassName());
+								AlarmLog.writeToAlarm("!!!!!!!!!!");
+							}
+						}
+					}
+				}
+			}
+
+		}
+		if (argCount == 1) {// implicit way to use intent
+			Value tempV1 = argValues.get(0);
+			String temps = tempV1.toString();
+			temps = temps.replace('"', ' ');
+			temps = temps.trim();
+			EntityApplicationBase application = Test.app;
+			ArrayList<EntityComponent> components = application.getComponents();
+			for (int i = 0; i < components.size(); i++) {
+				ArrayList<EntityIntentFilter> intentFilter = components.get(i)
+						.getIntentFilter();
+				for (int j = 0; j < intentFilter.size(); j++) {
+					ArrayList<String> actions = intentFilter.get(j).actions;
+					for (String s : actions) {
+						if (s.equals(temps)) {
+							for (EntityClass eclass : classes) {
+								if (eclass.getclassName().equals(
+										components.get(i).getComponnetName())) {
+									if (curClass.getComponentInvokeTree()
+											.Addchildren(eclass, v,
+													curMethod.getMethodName(),
+													curClass.getclassName())) {
+										AlarmLog.writeToAlarm("a intent:");
+										AlarmLog.writeToAlarm(curClass
+												.getclassName()
+												+ "->"
+												+ eclass.getclassName());
+										AlarmLog.writeToAlarm("!!!!!!!!!!");
+									}
+								}
+							}
+
+						}
+					}
+				}
+			}
+		}
+
+	}
+
+	public List<EntitySourceInf> initializeTaintedLocalVarsList(
+			List<EntitySourceInf> oldVars,
+			Map<Integer, EntitySourceInf> paraTmap, EntityMethod em,
+			EntityClass ec, Stack<InvokMethodInfo> invokestack) {
+
+		List<EntitySourceInf> NewtaintedVariables = new ArrayList<EntitySourceInf>();
+		AndroidLifeCycleCallGraph androidlifecyclegrpah = new AndroidLifeCycleCallGraph();
+		if (paraTmap != null && !paraTmap.isEmpty()) {
+			Iterator<Entry<Integer, EntitySourceInf>> iter = paraTmap
+					.entrySet().iterator();
+			while (iter.hasNext()) {
+				Entry<Integer, EntitySourceInf> entry = iter.next();
+				Integer key = entry.getKey();
+				EntitySourceInf val = entry.getValue();
+				InvokMethodInfo lastMethodinfo = invokestack.peek();
+				Stmt lastInvokestmt = (Stmt) lastMethodinfo.getUnit();
+				Value taintedparameter = new ParameterRef(
+						em.sootmethod.getParameterType(key.intValue()),
+						key.intValue());
+				EntitySourceInf newTaintedParamsource = new EntitySourceInf(
+						taintedparameter, lastInvokestmt, val,
+						em.getMethodName(), ec.getclassName());
+				NewtaintedVariables.add(newTaintedParamsource);
+			}
+
+		} else if (ec.isEntryPointClass()
+				&& androidlifecyclegrpah.isLifeCycle(em.getMethodName())) {
+			NewtaintedVariables.addAll(oldVars);
+		}
+		return NewtaintedVariables;
+	}
+
+	public List<taitedEntityClassVarible> initializeTaintedlistClassVarsList(
+			EntityClass curClass) {
+		ClassVarsStore classvarstore = BuildCallGraph.classvarstore;
+		List<taitedEntityClassVarible> taintedClassVars = new ArrayList<taitedEntityClassVarible>();
+		taintedClassVars.addAll(classvarstore.publicStaticVars);
+		taintedClassVars.addAll(classvarstore.publicNonStaticVars);
+		List<EntityClass> classes = new ArrayList<EntityClass>();
+		List<EntityClass> OuterClasses = curClass.outclasses;
+		if (OuterClasses != null)
+			classes.addAll(OuterClasses);
+		classes.add(curClass);
+		Map<String, List<taitedEntityClassVarible>> privateStaticvars = classvarstore.privateStaticVars;
+		Map<String, List<taitedEntityClassVarible>> privateNonStaticvars = classvarstore.privateNonStaticVars;
+		for (EntityClass ec : classes) {
+			String classname = ec.getclassName();
+			if (privateStaticvars.containsKey(classname)) {
+				taintedClassVars.addAll(privateStaticvars.get(classname));
+			}
+			if (privateNonStaticvars.containsKey(classname)) {
+				taintedClassVars.addAll(privateNonStaticvars.get(classname));
+			}
+		}
+		return taintedClassVars;
+	}
+
+	/**
+	 * The function is to get tainted augments in a function invoke;
+	 * 
+	 * @param stmt
+	 * @param taintedVariables
+	 * @return
+	 */
+	public Map<Integer, EntitySourceInf> getTaitedfParameters(Stmt stmt,
+			List<EntitySourceInf> taintedVariables) {
+		List<Value> invokeAugments = stmt.getInvokeExpr().getArgs();
+		Map<Integer, EntitySourceInf> paraTaintMap = new HashMap<Integer, EntitySourceInf>();
+
+		for (int i = 0; i < invokeAugments.size(); i++) {
+			for (EntitySourceInf t : taintedVariables) {
+				if (t.getSource().equivTo(invokeAugments.get(i)))
+					paraTaintMap.put(i, t);
+			}
+		}
+		return paraTaintMap;
+	}
+
+	public boolean checkAStmt(Stmt stmt,
+			List<EntitySourceInf> taintedVariables, EntityMethod curMethod,
+			EntityClass curClass) {
+		// TODO Auto-generated method stub
+		System.err.println("Sink found: " + stmt);
+
+		String curmethodname = curMethod.getMethodName();
+		String curclassname = curClass.getclassName();
+		ValueBox ivbBox = stmt.getInvokeExprBox();
+		List<ValueBox> valuebox = ivbBox.getValue().getUseBoxes();
+		boolean rs = false;
+		for (ValueBox itrator : valuebox) {
+			Value tempV = itrator.getValue();
+			for (int i = 0; i < taintedVariables.size(); i++) {
+				if (taintedVariables.get(i).getSource().equivTo(tempV)) {
+					rs = true;
+					System.err.println("Alert There exits leaking path !!!!");
+					System.err.println("Found a flow from Source to Sink:");
+					EntitySinkInf sink = new EntitySinkInf(tempV, stmt,
+							curmethodname, curclassname);
+					RetriveTheLeakingPath(taintedVariables.get(i), sink,
+							curClass);
+				}
+			}
+		}
+		return rs;
+	}
+
+	private void RetriveTheLeakingPath(EntitySourceInf entitySourceInf,
+			EntitySinkInf sink, EntityClass curClass) {
+		// TODO Auto-generated method stub
+		EntitySourceInf p = entitySourceInf;
+		EntitySourceInf prep = entitySourceInf;
+		List<List<EntitySourceInf>> sumLeakingPath = new ArrayList<List<EntitySourceInf>>();
+		List<EntitySourceInf> currentComponentLeakingPath = new ArrayList<EntitySourceInf>();
+		while (p != null) {
+			currentComponentLeakingPath.add(p);
+			prep = p;
+			p = p.getPre();
+		}
+		if (curClass.taintedIntent.size() > 0
+				&& prep.getStmt().toString().contains("android.content.Intent")) {
+			RetriveInterComponentPath(prep, curClass,
+					currentComponentLeakingPath, sumLeakingPath);
+		}
+		if (sumLeakingPath.size() == 0) {
+			List<EntitySourceInf> sources = new ArrayList<EntitySourceInf>();
+			for (int i = currentComponentLeakingPath.size() - 1; i >= 0; i--) {
+				sources.add(currentComponentLeakingPath.get(i));
+			}
+			sumLeakingPath.add(sources);
+		}
+		for (List<EntitySourceInf> sources : sumLeakingPath) {
+			outputPrint(sources, sink);
+		}
+	}
+
+	private void RetriveInterComponentPath(
+			EntitySourceInf lastTaintedInComponent, EntityClass curClass,
+			List<EntitySourceInf> currentComponentLeakingPath,
+			List<List<EntitySourceInf>> sumLeakingPath) {
+
+		String type = lastTaintedInComponent.getSource().getType().toString();
+		for (TaintedIntent taintedintent : curClass.taintedIntent) {
+			if (type.equals(taintedintent.getType())) {
+				List<EntitySourceInf> LeakingPath = new ArrayList<EntitySourceInf>();
+				LeakingPath.addAll(currentComponentLeakingPath);
+				EntitySourceInf p = taintedintent.getTaintedsource();
+				EntitySourceInf prep = p;
+				while (p != null) {
+					LeakingPath.add(p);
+					prep = p;
+					p = p.getPre();
+				}
+				if (prep.getStmt().toString()
+						.contains("android.content.Intent")) {
+					RetriveInterComponentPath(prep,
+							taintedintent.getSourceclass(), LeakingPath,
+							sumLeakingPath);
+				} else {
+					reverseLeakingPath(LeakingPath);
+					sumLeakingPath.add(LeakingPath);
+				}
+			}
+		}
+
+	}
+
+	private void reverseLeakingPath(List<EntitySourceInf> sources) {
+		int head = 0;
+		int tail = sources.size() - 1;
+		while (head < tail) {
+			EntitySourceInf temp = sources.get(head);
+			sources.set(head, sources.get(tail));
+			sources.set(tail, temp);
+			head++;
+			tail--;
+		}
+	}
+
+	public void outputPrint(List<EntitySourceInf> tempSourceInfs,
+			EntitySinkInf sink) {
+		System.err
+				.println("****************************************************************************************************");
+		AlarmLog.writeToAlarm("*************************************************************************************************");
+		AlarmLog.writeToCommonAlarm("*******************************************************************************************");
+		AlarmLog.writeToCommonAlarm("Your application may be in danger, detailed information as following : ");
+		int i = 1;
+		EntitySourceInf s = tempSourceInfs.get(0);
+		AlarmLog.writeToAlarm("The step " + i + "  Source:");
+		AlarmLog.writeToAlarm("Class:" + s.getClassName() + "  Method:"
+				+ s.getMethodName());
+		System.out.println("The  step " + i + "  Source:");
+		System.out.println("Class:" + s.getClassName() + "  Method:"
+				+ s.getMethodName());
+		if (s.getStmt() != null) {
+			System.out.println(s.getStmt().toString());
+			AlarmLog.writeToAlarm("Value: " + s.getSource().toString()
+					+ "        Stmt:" + s.getStmt().toString());
+		}
+		// alert for common users***start*******
+		Iterator<String> it = MainThread.FriendlyAlarmMap.keySet().iterator();
+		while (it.hasNext()) {
+			String alarmString = it.next();
+			if (s.getStmt().toString().contains(alarmString)) {
+				AlarmLog.writeToCommonAlarm(MainThread.FriendlyAlarmMap
+						.get(alarmString));
+				break;
+			}
+		}
+		// alert for common users***end*******
+		i = i + 1;
+		for (int k = 1; k < tempSourceInfs.size(); k++) {
+			s = tempSourceInfs.get(k);
+			AlarmLog.writeToAlarm("The step " + i + "  propagated:");
+			AlarmLog.writeToAlarm("Class:" + s.getClassName() + "  Method:"
+					+ s.getMethodName());
+
+			System.out.println("The  step " + i + "  propagated:");
+			System.out.println("Class:" + s.getClassName() + "  Method:"
+					+ s.getMethodName());
+
+			if (s.getStmt() != null) {
+				System.out.println(s.getStmt().toString());
+				AlarmLog.writeToAlarm("Value: " + s.getSource().toString()
+						+ "        Stmt:" + s.getStmt().toString());
+			}
+			i++;
+		}
+		System.out.println("The  step " + i + "  : Sink");
+		System.out.println("Class:" + sink.getClassName() + "  Method:"
+				+ sink.getMethodName());
+		System.out.println(sink.getStmt().toString());
+		AlarmLog.writeToAlarm("The step " + i + " : Sink");
+		AlarmLog.writeToAlarm("Class:" + sink.getClassName() + "  Method:"
+				+ sink.getMethodName());
+		AlarmLog.writeToAlarm(sink.getStmt().toString());
+		System.err
+				.println("********************************************************************************************************");
+		AlarmLog.writeToAlarm("*************************************************************************************************");
+	}
+
+	public boolean isDefinebyDeveloper(Stmt stmt, String curClassName,
+			List<EntityClass> eClassList) {
+
+		String declaringClass = stmt.getInvokeExpr().getMethod()
+				.getDeclaringClass().getName();
+		// method in current class
+		if (declaringClass.equals(curClassName)) {
+			return true;
+		} else {
+			for (EntityClass eClass : eClassList) {
+				if (declaringClass.equals(eClass.getclassName())) {
+					return true;
+				}
+			}
+		}
+		return false;
+
+	}
+
+	public int hasTaintedVarible(List<EntitySourceInf> taintedVariables,
+			Stmt stmt) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	/**
+	 * Update tainedList according to different "tag"
+	 * 
+	 * @param stmt
+	 * @param taintedLocalVariables
+	 * @param curMethodName
+	 * @param curClassName
+	 */
+	public void updateTaintedList(Stmt stmt,
+			List<EntitySourceInf> taintedLocalVariables, String curMethodName,
+			String curClassName, Stack<InvokMethodInfo> invokestack, String Tag) {
+		// TODO Auto-generated method stub
+
+		if (Tag.equals("Add")) {
+			if (stmt.toString().contains("boolean equals(java.lang.Object)"))
+				return;
+			DefinitionStmt ds = (DefinitionStmt) stmt;
+			Value lv = ds.getLeftOp();
+			if (containSourceAugmentsinLeft(stmt, taintedLocalVariables))
+				return;
+			if (lv instanceof StaticFieldRef || lv instanceof JInstanceFieldRef) {
+				ClassVarsStore classvarstore = BuildCallGraph.classvarstore;
+				Value rv = null;
+				boolean check = false;
+				for (ValueBox rvBox : ds.getUseBoxes()) {
+					rv = rvBox.getValue();
+					if (check)
+						break;
+					for (int i = 0; i < taintedLocalVariables.size(); i++) {
+						EntitySourceInf tmpsource = taintedLocalVariables
+								.get(i);
+						check = tmpsource.getSource().toString()
+								.equals(rv.toString())
+								&& tmpsource.getClassName()
+										.equals(curClassName);
+						if (check) {
+							if (lv instanceof StaticFieldRef) {// static
+								StaticFieldRef staticfrlv = (StaticFieldRef) lv;
+								SootField lvsf = staticfrlv.getField();
+								SootClass lvsc = lvsf.getDeclaringClass();
+								taitedEntityClassVarible tclassvar = new taitedEntityClassVarible(
+										lvsc, lvsf, stmt, tmpsource);
+								EntitySourceInf classsource = new EntitySourceInf(
+										lv, stmt, tmpsource, curMethodName,
+										curClassName);
+								if (lvsf.isPublic()) {
+									classvarstore.publicStaticVars
+											.add(tclassvar);
+								} else {
+									List<taitedEntityClassVarible> classsvarsinfolist = classvarstore.privateStaticVars
+											.get(curClassName);
+									if (classsvarsinfolist == null)
+										classsvarsinfolist = new ArrayList<taitedEntityClassVarible>();
+									classsvarsinfolist.add(tclassvar);
+									classvarstore.privateStaticVars.put(
+											curClassName, classsvarsinfolist);
+								}
+								taintedLocalVariables.add(classsource);
+								classsource.print();
+							} else if (lv instanceof JInstanceFieldRef) {// nonstatic
+								JInstanceFieldRef jifrlv = (JInstanceFieldRef) lv;
+								SootField lvsf = jifrlv.getField();
+								SootClass lvsc = lvsf.getDeclaringClass();
+								EntitySourceInf classsource = new EntitySourceInf(
+										lv, stmt, tmpsource, curMethodName,
+										curClassName);
+								taitedEntityClassVarible tclassvar = new taitedEntityClassVarible(
+										lvsc, lvsf, stmt, classsource);
+								if (lvsf.isPublic()) {
+									classvarstore.publicNonStaticVars
+											.add(tclassvar);
+								} else {
+									List<taitedEntityClassVarible> classsvarsinfolist = classvarstore.privateNonStaticVars
+											.get(curClassName);
+									if (classsvarsinfolist == null)
+										classsvarsinfolist = new ArrayList<taitedEntityClassVarible>();
+									classsvarsinfolist.add(tclassvar);
+									classvarstore.privateNonStaticVars.put(
+											curClassName, classsvarsinfolist);
+								}
+								taintedLocalVariables.add(classsource);
+								classsource.print();
+								BackwardAliasAnalysis(lv, stmt, invokestack,
+										classsource);
+
+							}
+							break;
+						}
+					}
+				}
+			}
+			// update the local tainted list;
+			else {
+				Value rv = null;
+				boolean check = false;
+				for (ValueBox rvBox : ds.getUseBoxes()) {
+					rv = rvBox.getValue();
+					if (check)
+						break;
+					for (int i = 0; i < taintedLocalVariables.size(); i++) {
+						EntitySourceInf tmpsource = taintedLocalVariables
+								.get(i);
+						check = tmpsource.getSource().toString()
+								.equals(rv.toString())
+								&& tmpsource.getClassName()
+										.equals(curClassName)
+								&& tmpsource.getMethodName().equals(
+										curMethodName);
+						if (check) {
+							lv = ds.getLeftOp();
+							// ***********start*************
+							if (!rv.equivTo(lv)) {
+								EntitySourceInf sourceinf = new EntitySourceInf(
+										lv, stmt, taintedLocalVariables.get(i),
+										curMethodName, curClassName);
+								taintedLocalVariables.add(sourceinf);
+								sourceinf.print();
+								if (lv instanceof JInstanceFieldRef) {// if the
+																		// left
+																		// one
+																		// is
+																		// object.field
+									BackwardAliasAnalysis(lv, stmt,
+											invokestack, sourceinf);
+								} else if (!rv.getType().toString()
+										.equals("java.lang.string")) {
+									// BackwardAliasAnalysis(lv,stmt,invokestack,sourceinf);
+								}
+							}
+						}
+					}
+				}
+			}
+		} else if (Tag.equals("Delete")) {
+			DefinitionStmt ds = (DefinitionStmt) stmt;
+			Value lv = null;
+			List<ValueBox> lvBoxs = ds.getDefBoxes();
+			for (ValueBox lb : lvBoxs) {
+				lv = lb.getValue();
+				if (lv != null) {
+					for (int i = 0; i < taintedLocalVariables.size(); i++)
+						if (taintedLocalVariables.get(i).getSource()
+								.equivTo(lv)) {
+							System.err.println("DELETE SOURCE"
+									+ taintedLocalVariables.get(i).getSource()
+											.toString());
+							taintedLocalVariables.remove(i);
+						}
+				}
+				// if (lv.toString().contains("$r0")) {
+				// boolean isContain = isClassVarContain(eclass,curClassName);
+				// if (isContain) {
+				// BuildCallGraph.taintedClassVariableList.get(curClassName).remove(lv);
+				// }
+				// }
+			}
+		} else if (Tag.equals("Return")) {
+			JReturnStmt rstmt = (JReturnStmt) stmt;
+			Value returnValue = rstmt.getOp();
+			for (EntitySourceInf source : taintedLocalVariables)
+				if (source.getSource().equals(returnValue)) {
+					EntitySourceInf sourceinf = new EntitySourceInf(
+							returnValue, stmt, source, curMethodName,
+							curClassName);
+					taintedLocalVariables.add(sourceinf);
+				}
+		}
+	}
+
+	private Stmt getFinalStmt(Value v, List<EntitySourceInf> Variables) {
+		Stmt cstmt = null;
+		int i = 10;
+		while (i > 0) {
+			for (EntitySourceInf es : Variables) {
+				if (es.getSource().equivTo(v)) {
+					if (es.getPre() != null) {
+						v = es.getPre().getSource();
+						break;
+					} else {
+						cstmt = es.getStmt();
+						if (cstmt == null) {
+							i = 0;
+							break;
+						}
+					}
+				}
+			}
+			i--;
+		}
+		return cstmt;
+	}
+
+	/**
+	 * This function is to implement backwardAliasAnalysi to build a Alias tree
+	 * 
+	 * @param v
+	 * @param stmt
+	 * @param invokestack
+	 * @param tmpsource
+	 */
+	private void BackwardAliasAnalysis(Value v, Stmt stmt,
+			Stack<InvokMethodInfo> invokestack, EntitySourceInf tmpsource) {
+		// TODO Auto-generated method stub
+		JInstanceFieldRef objectfield = (JInstanceFieldRef) v;
+		Value target = objectfield.getBase();
+
+		invokestack.add(new InvokMethodInfo(this.getEntityclass(), this
+				.getEntitymethod(), stmt));
+		Stack<InvokMethodInfo> tmpstack = new Stack<InvokMethodInfo>();
+		int LastAugmentAliasindex = -1;
+		InvokMethodInfo pretopMethod = null;
+		InvokMethodInfo topMethod;
+		AliasElement root = null;
+		List<AliasMap> maplist = new ArrayList<AliasMap>();
+
+		while (!invokestack.isEmpty()) {
+
+			topMethod = invokestack.pop();// 娴犲穼nvokeStack娑擃厽瀣侀崙杞扮瑓娑擄拷閲滈弬瑙勭《
+			SootMethod sc = topMethod.getEmethod().sootmethod;
+			UnitGraph g = topMethod.getEmethod().getCfgUnit();
+			Iterator<Unit> it = g.getBody().getUnits().iterator();
+			PatchingChain<Unit> lu = g.getBody().getUnits();
+			Unit u1 = topMethod.getUnit();
+			Stmt s1 = (Stmt) u1;// s1 閺勵垱鐖ゆい鑸垫煙濞夋洜娈戞潻娑滎攽閸ョ偞鍑介惃鍕儑娑擄拷娼拠顓炲綖
+			if (s1 instanceof JInvokeStmt) {// 缁楊兛绔撮崣銉ヮ洤閺嬫粍妲竔nvokeStmt閿涘苯鍨悰銊︽閸ョ偞鍑介崚棰佺啊閺嶅牅鑵戦崣锔跨閺傝纭堕妴锟�/inoveMethod(object):parameter0
+											// = object;
+				JInvokeStmt jinvokstmt = (JInvokeStmt) s1;
+				List<Value> Arguments = jinvokstmt.getInvokeExpr().getArgs();
+				SootMethod invokeMethod = jinvokstmt.getInvokeExpr()
+						.getMethod();
+				Value tmpParameter = new ParameterRef(
+						invokeMethod.getParameterType(LastAugmentAliasindex),
+						LastAugmentAliasindex);
+				Value Augment = Arguments.get(LastAugmentAliasindex);
+				AliasElement left = new AliasElement(tmpParameter,
+						pretopMethod.getEmethod(), pretopMethod.getEclass());
+				AliasElement right = new AliasElement(Augment,
+						topMethod.getEmethod(), topMethod.getEclass());
+				AliasMap map = new AliasMap(left, right);
+				maplist.add(map);
+				target = Augment;
+
+			}
+			Unit u2 = null;
+			boolean hasParameterAlias = false;
+
+			while (true) {// 闁劖顒為崶鐐村嚱鐠囥儲鏌熷▔鏇炲敶閻ㄥ嫭鐦℃稉锟藉綖
+				u2 = lu.getPredOf(u1);
+				Stmt s2 = (Stmt) u2;
+				EntityMethod curMethod = topMethod.getEmethod();
+				EntityClass curClass = topMethod.getEclass();
+				if (s2 instanceof JAssignStmt) {// a = b
+					JAssignStmt assignstmt = (JAssignStmt) s2;
+					Value lv = assignstmt.getLeftOp();
+					Value rv = assignstmt.getRightOp();
+
+					if (lv.equals(target) && rv.getUseBoxes().size() == 0) {// 鐞涖劍妲戦崚浼淬�婇柈锟絫arget
+																			// =
+																			// new
+																			// target();
+						root = new AliasElement(target, curMethod, curClass);
+						break;
+					} else if (lv.equals(target)
+							&& !(rv instanceof JInstanceFieldRef)) {// target =
+																	// newtarget
+						AliasElement left = new AliasElement(lv, curMethod,
+								curClass);
+						AliasElement right = new AliasElement(rv, curMethod,
+								curClass);
+						AliasMap map = new AliasMap(left, right);
+						maplist.add(map);
+						JInstanceFieldRef rinf = (JInstanceFieldRef) rv;
+						target = rinf.getBase();
+					} else if (rv.equals(target)
+							&& !(lv instanceof JInstanceFieldRef)) {// Alias =
+																	// target
+						AliasElement left = new AliasElement(lv, curMethod,
+								curClass);
+						AliasElement right = new AliasElement(rv, curMethod,
+								curClass);
+						AliasMap map = new AliasMap(left, right);
+						maplist.add(map);
+					} else if (lv.equals(target)
+							&& rv instanceof JInstanceFieldRef) {// target =
+																	// nextTarget.field
+						AliasElement left = new AliasElement(lv, curMethod,
+								curClass);
+						AliasElement right = new AliasElement(rv, curMethod,
+								curClass);
+						AliasMap map = new AliasMap(left, right);
+						maplist.add(map);
+						JInstanceFieldRef rinf = (JInstanceFieldRef) rv;
+						target = rinf.getBase();
+					} else if (!s2.containsInvokeExpr()) {
+						AliasElement left = new AliasElement(lv, curMethod,
+								curClass);
+						AliasElement right = new AliasElement(rv, curMethod,
+								curClass);
+						AliasMap map = new AliasMap(left, right);
+						maplist.add(map);
+					}
+
+				} else if (s2 instanceof JIdentityStmt) { // object = paramter0;
+					JIdentityStmt identitystmt = (JIdentityStmt) s2;
+					Value lv = identitystmt.getLeftOp();
+					if (lv.equals(target)) {
+						Value rv = identitystmt.getRightOp();
+						Value tmpParameter;
+
+						// 婵″倹鐏夐弰顖濐攽閸欏倷绱堕柅锟�
+						for (int i = 0; i < sc.getParameterCount(); i++) {
+							tmpParameter = new ParameterRef(
+									sc.getParameterType(i), i);
+							if (tmpParameter.equivTo(rv)) {
+								hasParameterAlias = true;
+								LastAugmentAliasindex = i;
+								AliasElement left = new AliasElement(lv,
+										curMethod, curClass);
+								AliasElement right = new AliasElement(rv,
+										curMethod, curClass);
+								AliasMap map = new AliasMap(left, right);
+								maplist.add(map);
+							}
+						}
+						// 婵″倹鐏夐弰鐥條assVar
+					}
+				}
+
+				if (u2 == null)
+					break;
+				u1 = u2;
+			}
+			if (!hasParameterAlias)
+				break;
+			tmpstack.push(topMethod);
+			pretopMethod = topMethod;
+		}
+		while (!tmpstack.isEmpty()) {
+			InvokMethodInfo tmpTop = tmpstack.pop();
+			invokestack.add(tmpTop);
+		}
+		AliasTree alias = new AliasTree(root, maplist, tmpsource,
+				this.getEntityclass(), this.getEntitymethod());
+		BuildCallGraph.aliasTreeList.add(alias);
+	}
+
+	public boolean containLocalSourceAugmentsinRight(Stmt stmt,
+			List<EntitySourceInf> taintedVariables) {
+		DefinitionStmt ds = (DefinitionStmt) stmt;
+		Value rv = null;
+		List<ValueBox> rvBoxs = ds.getUseBoxes();
+		for (ValueBox rb : rvBoxs) {
+			rv = rb.getValue();
+			if (rv != null) {
+				for (int i = 0; i < taintedVariables.size(); i++) {
+					EntitySourceInf temp = taintedVariables.get(i);
+					Value tempV = temp.getSource();
+					if (tempV.toString().equals(rv.toString()))
+						return true;
+				}
+			}
+
+		}
+		return false;
+	}
+
+	public void checkClassSourceAugmentsinRight(Stmt stmt,
+			List<taitedEntityClassVarible> taintedClassVars,
+			List<EntitySourceInf> taintedLocalVars, String curMethodName,
+			String curClassName) {
+		DefinitionStmt ds = (DefinitionStmt) stmt;
+		Value lv = ds.getLeftOp();
+		Value rv = null;
+		boolean checked = false;
+		List<ValueBox> rvBoxs = ds.getUseBoxes();
+		for (ValueBox rb : rvBoxs) {
+			rv = rb.getValue();
+			if (checked)
+				break;
+			if (rv != null && !(rv instanceof Local)) {
+				for (int i = 0; i < taintedClassVars.size(); i++) {
+					taitedEntityClassVarible temp = taintedClassVars.get(i);
+					if (rv instanceof StaticFieldRef) {
+						StaticFieldRef rvsfr = (StaticFieldRef) rv;
+						if (rvsfr.getField().equals(temp.sf)) {
+							EntitySourceInf classsource = new EntitySourceInf(
+									rv, stmt, temp.pre, curMethodName,
+									curClassName);
+							EntitySourceInf localsource = new EntitySourceInf(
+									lv, stmt, classsource, curMethodName,
+									curClassName);
+							classsource.print();
+							localsource.print();
+							taintedLocalVars.add(classsource);
+							taintedLocalVars.add(localsource);
+							checked = true;
+							break;
+						}
+					} else if (rv instanceof JInstanceFieldRef) {
+						JInstanceFieldRef rvjifr = (JInstanceFieldRef) rv;
+						if (rvjifr.getField().equals(temp.sf)) {
+							EntitySourceInf classsource = new EntitySourceInf(
+									rv, stmt, temp.pre, curMethodName,
+									curClassName);
+							EntitySourceInf localsource = new EntitySourceInf(
+									lv, stmt, classsource, curMethodName,
+									curClassName);
+							classsource.print();
+							localsource.print();
+							taintedLocalVars.add(classsource);
+							taintedLocalVars.add(localsource);
+							checked = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+	}
+
+	public boolean containSourceAugmentsinLeft(Stmt stmt,
+			List<EntitySourceInf> taintedVariables) {
+		DefinitionStmt ds = (DefinitionStmt) stmt;
+		Value lv = null;
+		List<ValueBox> lvBoxs = ds.getDefBoxes();
+		for (ValueBox lb : lvBoxs) {
+			lv = lb.getValue();
+			if (lv != null) {
+				for (int i = 0; i < taintedVariables.size(); i++) {
+					EntitySourceInf temp = taintedVariables.get(i);
+					Value tempV = temp.getSource();
+					if (tempV.toString().equals(lv.toString()))
+						return true;
+				}
+			}
+
+		}
+		return false;
+	}
+
+	public boolean checkJReturnStmt(Stmt stmt,
+			List<EntitySourceInf> taintedVariables) {
+		if (stmt instanceof JReturnVoidStmt) {
+			return false;
+		}
+		JReturnStmt rstmt = (JReturnStmt) stmt;
+		Value returnValue = rstmt.getOp();
+		for (EntitySourceInf source : taintedVariables) {
+			if (source.getSource().equals(returnValue)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public void MergeTaintedList(List<EntitySourceInf> returnSourceVars,
+			List<EntitySourceInf> taintedVariables) {
+		for (EntitySourceInf rsource : returnSourceVars) {
+			taintedVariables.add(rsource);
+		}
+	}
+
+	public void CheckTaintedWrapper(UnitGraph g, Stmt stmt,
+			List<EntitySourceInf> taintedVariables, EntityMethod curMethod,
+			EntityClass curClass) {
+		String curMethodName = curMethod.getMethodName();
+		String curClassName = curClass.getclassName();
+		FlowAnalysisProblem fa = new FlowAnalysisProblem(g);
+		FlowSet fsb = (FlowSet) fa.getFlowBefore(stmt);
+		Iterator it1 = fsb.iterator();
+		FlowSet fsa = (FlowSet) fa.getFlowAfter(stmt);
+		Iterator it2 = fsa.iterator();
+
+		// Iterator i1 = fsb.iterator();
+		// Iterator i2 = fsa.iterator();
+		// while (i1.hasNext()) {
+		// System.out.println("before: "+i1.next().toString());
+		// }
+		// while (i2.hasNext()) {
+		// System.out.println("after: "+i2.next().toString());
+		// }
+
+		Value rv = null;
+		Value lv = null;
+		int BeforeSize = fsb.size();
+		int AfterSize = fsa.size();
+		List<Value> rvList = new ArrayList<Value>();
+		List<Value> lvList = new ArrayList<Value>();
+		for (int i = 0; i < fsb.size(); i++) {
+			rv = (Value) it1.next();
+			if (!rv.toString().equals("$r0"))
+				rvList.add(rv);
+		}
+		for (int i = 0; i < fsa.size(); i++) {
+			lv = (Value) it2.next();
+			if (!lv.toString().equals("$r0"))
+				lvList.add(lv);
+		}
+		BeforeSize = rvList.size();
+		AfterSize = lvList.size();
+		if ((BeforeSize == AfterSize) && BeforeSize != 0) {
+			for (int i = rvList.size(); i > 0; i--) {
+				rv = rvList.get(i - 1);
+				lv = lvList.get(i - 1);
+				if (!rv.equivTo(lv)) {
+					System.out.println(lv.toString() + " = " + rv.toString());
+					updateTaintedListWrapper(stmt, lv, rv, taintedVariables,
+							curMethod, curClass, g);
+				}
+			}
+		}
+		if ((BeforeSize > AfterSize) && BeforeSize > 1 && AfterSize > 0) {
+			for (int i = 0; i < AfterSize; i++) {
+				rv = rvList.get(i);
+				lv = lvList.get(i);
+				if (rv.equivTo(lv)) {
+					continue;
+				}
+			}
+			int j = rvList.indexOf(rv);
+			rv = rvList.get(j + 1);
+			assert (rv != null);
+			System.out.println(lv.toString() + " = " + rv.toString());
+			updateTaintedListWrapper(stmt, lv, rv, taintedVariables, curMethod,
+					curClass, g);
+
+		}
+	}
+
+	public void updateTaintedListWrapper(Stmt stmt, Value lv, Value rv,
+			List<EntitySourceInf> taintedVariables, EntityMethod curMethod,
+			EntityClass curClass, UnitGraph g) {
+		String curMethodName = curMethod.getMethodName();
+		String curClassName = curClass.getclassName();
+		assert (rv != null);
+		for (int i = 0; i < taintedVariables.size(); i++) {
+			if (taintedVariables.get(i).getSource().equivTo(rv)) {
+				boolean loop = false;
+				for (int j = 0; j < taintedVariables.size(); j++) {
+					if (taintedVariables.get(j).getSource().equivTo(lv)) {
+						loop = true;
+					}
+				}
+				if (!loop) {
+					EntitySourceInf sourceinf = new EntitySourceInf(lv, stmt,
+							taintedVariables.get(i), curMethodName,
+							curClassName);
+					sourceinf.print();
+					taintedVariables.add(sourceinf);
+					if (sourceinf.getSource().getType().toString()
+							.equals("android.content.Intent")) {
+						updateTaintedIntent(g, stmt, sourceinf, curMethod,
+								curClass);
+					}
+				}
+			}
+		}
+
+	}
+
+	private void updateTaintedIntent(UnitGraph g, Stmt stmt,
+			EntitySourceInf sourceinf, EntityMethod curMethod,
+			EntityClass curClass) {
+		// TODO Auto-generated method stub
+		Value v = sourceinf.getSource();
+		String methodname = curMethod.getMethodName();
+		String classname = curClass.getclassName();
+		ComponentInvokeGraphNode cTreeNode = curClass.getComponentInvokeTree();
+		Set<ComponentInvokeGraphNodeIntentPair> set = cTreeNode.childrenNodes;
+		for (ComponentInvokeGraphNodeIntentPair pair : set) {
+			ComponentInvokeGraphNode nextTreeNode = pair
+					.getComponentInvokeTreeNode();
+			IntentValue intentValue = pair.getIntent();
+			if (intentValue.v.equals(v)
+					&& intentValue.methodname.equals(methodname)
+					&& intentValue.classname.equals(classname)) {
+				String type = sourceinf.getPre().getSource().getType()
+						.toString();
+				TaintedIntent taintedintent = new TaintedIntent(curClass,
+						nextTreeNode.eclass, sourceinf, stmt, type);
+				nextTreeNode.eclass.taintedIntent.add(taintedintent);
+			}
+		}
+	}
+
+	public EntityPolyMethod findPolyMethod(SootClass declaredClass,
+			String declaringClassName, Stmt stmt, List<EntityClass> curClasslist) {
+		EntityPolyMethod epm = null;
+		if (declaredClass.hasSuperclass()) {
+			String superClass = declaredClass.getSuperclass().toString();
+			if (ProcessCfg.isContain(superClass, curClasslist)) {
+				if (stmt.getInvokeExpr() instanceof InstanceInvokeExpr) {
+					InstanceInvokeExpr ii = (InstanceInvokeExpr) stmt
+							.getInvokeExpr();
+					Value base = ii.getBase();
+					epm = new EntityPolyMethod(base, superClass,
+							declaringClassName);
+				}
+			}
+		}
+		return epm;
+	}
+
+	public String changeToRealClass(Stmt stmt,
+			List<EntityPolyMethod> polyMethodList, String declaringClassName,
+			SootMethod declaringMethod, List<EntityClass> curClasslist) {
+		if (stmt.getInvokeExpr() instanceof InstanceInvokeExpr) {
+			InstanceInvokeExpr ii = (InstanceInvokeExpr) stmt.getInvokeExpr();
+			Value base = ii.getBase();
+			for (EntityPolyMethod epm : polyMethodList) {
+				if (epm.getBase().equivTo(base)
+						&& epm.getSuperClass().toString()
+								.equals(declaringClassName)) {
+					// see if the subclass has this method
+					if (ProcessCfg.isMethodContain(declaringMethod,
+							epm.getSubClass(), curClasslist)) {
+						declaringClassName = epm.getSubClass();
+					}
+
+				}
+			}
+		}
+		return declaringClassName;
+	}
+
+	/**
+	 * The is method is to check whether the value exists the Alias
+	 * 
+	 * @param stmt
+	 * @param taintedVariables
+	 * @param curMethodName
+	 * @param curClassName
+	 * @return
+	 */
+	public boolean containSourceAliasObject(Stmt stmt,
+			List<EntitySourceInf> taintedVariables, EntityMethod curMethodName,
+			EntityClass curClassName) {
+		// List<AliasTree> aliaslist=BuildCallGraph.AliasList;
+		if (stmt instanceof JAssignStmt) {
+			JAssignStmt assignment = (JAssignStmt) stmt;
+			Value lv = assignment.getLeftOp();
+			Value rv = assignment.getRightOp();
+			if (rv instanceof JInstanceFieldRef) {
+
+				checkContainAliasValue(rv, assignment, taintedVariables,
+						curMethodName, curClassName);
+			} else if (rv instanceof JimpleLocal) {
+				checkContainAliasValue(rv, assignment, taintedVariables,
+						curMethodName, curClassName);
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * The is method is to implement Alias analysis
+	 * 
+	 * @param instanceref
+	 * @param stmt
+	 * @param taintedVariables
+	 * @param curMethod
+	 * @param curClass
+	 * @return
+	 **/
+	public void checkContainAliasValue(Value rv, JAssignStmt stmt,
+			List<EntitySourceInf> taintedVariables, EntityMethod curMethod,
+			EntityClass curClass) {
+
+		if (rv instanceof JInstanceFieldRef) {
+			AliasElement target;
+			Type targetType;
+			Type basetargetType;
+			AliasElement basetarget;
+			Value lv = stmt.getLeftOp();
+			JInstanceFieldRef rinf = (JInstanceFieldRef) rv;
+
+			ArrayList<AliasTree> tmpTreeList = BuildCallGraph.aliasTreeList;
+			if (tmpTreeList.size() == 0)
+				return;
+			target = new AliasElement(rv, curMethod, curClass);
+			targetType = target.v.getType();
+			basetarget = new AliasElement(rinf.getBase(), curMethod, curClass);
+			basetargetType = basetarget.v.getType();
+
+			for (AliasTree tree : tmpTreeList) {
+				AliasTreeNode targetnode = tree.searchTree(targetType, target);
+				AliasTreeNode basetargetnode = tree.searchTree(basetargetType,
+						basetarget);
+				if (targetnode != null && basetargetnode == null)
+					continue;
+				if (targetnode != null) {
+					if (targetnode.deep == tree.depth) {
+						EntitySourceInf source1 = new EntitySourceInf(rv, stmt,
+								tree.Source, curMethod.getMethodName(),
+								curClass.getclassName());
+						EntitySourceInf source2 = new EntitySourceInf(lv, stmt,
+								source1, curMethod.getMethodName(),
+								curClass.getclassName());
+						taintedVariables.add(source1);
+						taintedVariables.add(source2);
+					} else
+						tree.updateAliasTree(targetnode, lv, curMethod,
+								curClass);
+
+				} else if (basetargetnode != null) {
+					if (basetargetnode.deep == tree.depth - 1) {
+						if (targetType
+								.equals(tree.Source.getSource().getType())) {
+							EntitySourceInf source1 = new EntitySourceInf(rv,
+									stmt, tree.Source,
+									curMethod.getMethodName(),
+									curClass.getclassName());
+							EntitySourceInf source2 = new EntitySourceInf(lv,
+									stmt, source1, curMethod.getMethodName(),
+									curClass.getclassName());
+							source1.print();
+							source2.print();
+							taintedVariables.add(source1);
+							taintedVariables.add(source2);
+						}
+					} else {
+						tree.updateAliasTree(basetargetnode, lv, curMethod,
+								curClass);
+						tree.updateAliasTree(basetargetnode, rv, curMethod,
+								curClass);
+					}
+
+				}
+			}
+		} else {
+			AliasElement target;
+			Type targetType;
+			Value lv = stmt.getLeftOp();
+			ArrayList<AliasTree> tmpTreeList = BuildCallGraph.aliasTreeList;
+			if (tmpTreeList.size() == 0)
+				return;
+			target = new AliasElement(rv, curMethod, curClass);
+			targetType = target.v.getType();
+			for (AliasTree tree : tmpTreeList) {
+				AliasTreeNode targetnode = tree.searchTree(targetType, target);
+				if (targetnode != null) {
+					if (targetnode.deep == tree.depth) {
+						EntitySourceInf source1 = new EntitySourceInf(rv, stmt,
+								tree.Source, curMethod.getMethodName(),
+								curClass.getclassName());
+						EntitySourceInf source2 = new EntitySourceInf(lv, stmt,
+								source1, curMethod.getMethodName(),
+								curClass.getclassName());
+						taintedVariables.add(source1);
+						taintedVariables.add(source2);
+					} else
+						tree.updateAliasTree(targetnode, lv, curMethod,
+								curClass);
+				}
+			}
+		}
+	}
+
+	public void generateReturnVariables(Stmt stmt,
+			List<EntitySourceInf> taintedVariables,
+			List<EntitySourceInf> returnVars, EntityMethod curMethod,
+			EntityClass curClass) {
+
+		Type methodRet = curMethod.sootmethod.getReturnType();
+		String curClassName = curClass.getclassName();
+		String curMethodName = curMethod.getMethodName();
+		if (methodRet.toString().equals("void")) {
+			if (taintedVariables.size() > 0) {
+				returnVars.addAll(taintedVariables);
+			}
+		} else {
+			JReturnStmt rstmt = (JReturnStmt) stmt;
+			Value v = rstmt.getOp();
+			int length = taintedVariables.size();
+			for (int i = 0; i < length; i++) {
+				EntitySourceInf tmpsource = taintedVariables.get(i);
+				if (tmpsource.getSource().toString().equals(v.toString())
+						&& tmpsource.getClassName().equals(curClassName)
+						&& tmpsource.getMethodName().equals(curMethodName)) {
+					EntitySourceInf reSource = new EntitySourceInf(v, stmt,
+							tmpsource, curMethodName, curClassName);
+					taintedVariables.add(reSource);
+				}
+			}
+			if (taintedVariables.size() > 0) {
+				returnVars.addAll(taintedVariables);
+			}
+		}
+	}
+
+	/**
+	 * The EntitySource is original one;
+	 * 
+	 * @param stmt
+	 * @param u
+	 * @param taintedVariables
+	 * @param curMethodName
+	 * @param curClassName
+	 */
+	public void addOriginalSource(Stmt stmt, Unit u,
+			List<EntitySourceInf> taintedVariables, String curMethodName,
+			String curClassName) {
+		if (u instanceof DefinitionStmt) {
+			System.err.println("Source found: " + u);
+			DefinitionStmt ds = (DefinitionStmt) stmt;
+			Value value = ds.getLeftOp();
+			EntitySourceInf sourceinf = new EntitySourceInf(value, stmt, null,
+					curMethodName, curClassName);
+			taintedVariables.add(sourceinf);
+		}
+	}
+
+	/**
+	 * This is general method to add a Value(source) to the tainted list;
+	 * 
+	 * @param v
+	 * @param stmt
+	 * @param pre
+	 * @param methodname
+	 * @param classname
+	 * @param taintedVariables
+	 */
+	public void addSourcetoTaintedList(Value v, Stmt stmt, EntitySourceInf pre,
+			String methodname, String classname,
+			List<EntitySourceInf> taintedVariables) {
+		EntitySourceInf newsource = new EntitySourceInf(v, stmt, pre,
+				methodname, classname);
+		taintedVariables.add(newsource);
+	}
+
+	public void updateTaintedList(Stmt stmt, Value lv, Value rv,
+			List<EntitySourceInf> taintedLocalVars, EntityMethod curMethod,
+			EntityClass curClass, UnitGraph g) {
+		// TODO Auto-generated method stub
+		updateTaintedListWrapper(stmt, rv, rv, taintedLocalVars, curMethod,
+				curClass, g);
+	}
+
+}

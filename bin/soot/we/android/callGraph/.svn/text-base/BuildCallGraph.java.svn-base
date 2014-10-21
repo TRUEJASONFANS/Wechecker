@@ -1,0 +1,206 @@
+package soot.we.android.callGraph;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+
+import soot.SootMethod;
+import soot.toolkits.graph.UnitGraph;
+import soot.we.android.IntentResolution.ComponentInvokeGraphNode;
+import soot.we.android.IntentResolution.ComponentInvokeGraphNodeIntentPair;
+import soot.we.android.IntentResolution.ComponentInvokeGraph;
+import soot.we.android.component.EntityClass;
+import soot.we.android.component.EntityMethod;
+import soot.we.android.test.Test;
+public class BuildCallGraph {
+	private List<EntityClass> classList;
+	ProcessCfg processCfg = new ProcessCfg();
+	GetCallback getCallBack = new GetCallback();
+	public static Set<String> androidCallbacks = new HashSet<String>();
+	public EasyTaintWrapper easyTaintWrapper;
+	public static ClassVarsStore classvarstore;
+    public static ArrayList<AliasTree> aliasTreeList;
+    public static ComponentInvokeGraph componentInvokeTrees;
+    public static ArrayList<String> visitedEntityComponents;
+    public static ArrayList<EntitySinkInf> LeakingPaths;
+    public static int processCfgTimes=0;
+    public final static int processCfgMaximumTimes=50;
+    public final static int maximumHopTimes = 5;
+    
+	public  enum  CallbackPolicy {
+		ArbitrarySequence,TwoRoundChecking
+	};
+	public CallbackPolicy callbackPolicy;
+	public void setEasyTaintWrapper(EasyTaintWrapper easyTaintWrapper) {
+		this.easyTaintWrapper = easyTaintWrapper;
+	}
+
+	public BuildCallGraph(List<EntityClass> classList,int policy) {
+		this.classList = classList;
+		switch(policy){
+			case 0:callbackPolicy = CallbackPolicy.ArbitrarySequence;break;
+			case 1:callbackPolicy = CallbackPolicy.TwoRoundChecking;break;
+		}
+	}
+
+	public void run() throws IOException {
+
+		androidCallbacks = GetCallback.loadAndroidCallbacks();
+		componentInvokeTrees = new ComponentInvokeGraph();
+		LeakingPaths = new ArrayList<EntitySinkInf>();
+		System.out.println("Component size"+Test.app.getComponents().size());
+		for (EntityClass eclass : classList) {
+			if (eclass.isEntryPointClass()) {
+				visitedEntityComponents = new ArrayList<String>();
+				runCurrentClass(eclass,0);
+			}
+				
+		}
+		
+	}
+	public void runCurrentClass(EntityClass eclass,int hop) throws IOException{
+		if(hop>maximumHopTimes) //The maximum hop we concern
+			return;
+		visitedEntityComponents.add(eclass.getclassName());
+		ComponentInvokeGraphNode componentInvoketreeNode = new ComponentInvokeGraphNode(eclass);
+		eclass.setComponentInvokeGraph(componentInvoketreeNode);
+		
+		if(eclass.hasSelfSuperClass(eclass)) {
+			eclass.mergeSuperClassMethod(eclass,classList);
+		}
+		eclass.setGetCallBack(new GetCallback());
+		// get callback method from current class
+		Map<EntityClass, Set<EntityMethod>> comCallbackMap = eclass.getGetCallBack().getCallBackFromLifeCycleMethod(eclass);
+		String compType = eclass.getCompType();
+		ArrayList<String[]> LifeCycle = new ArrayList<String[]>();
+		System.out.println("CHOOSELIFECYCLE: " + compType);
+		
+		if (compType.equals("android.app.Activity")||compType.equals("android.app.ListActivity")) {
+			AndroidLifeCycleCallGraph ALCG = new AndroidLifeCycleCallGraph();
+			LifeCycle = ALCG.getActivityAndroidLifeCycleCallGraph();
+		} else if (compType.equals("android.content.BroadcastReceiver")) {
+			AndroidLifeCycleCallGraph ALCG = new AndroidLifeCycleCallGraph();
+			LifeCycle = ALCG.getBroadcastAndroidLifeCycleCallGraph();
+		} else if (compType.equals("android.app.Service")) {
+			AndroidLifeCycleCallGraph ALCG = new AndroidLifeCycleCallGraph();
+			LifeCycle = ALCG.geServiceAndroidLifeCycleCallGraph();
+		}
+		CallbackPolicy callbackPolicy = this.callbackPolicy;
+		for (String[] Sequence : LifeCycle) {		
+			List<EntitySourceInf> taintedLocalVariables = new ArrayList<EntitySourceInf>();
+			classvarstore = new ClassVarsStore();
+			for (int i = 0; i < Sequence.length; i++) {
+				String mName = Sequence[i];
+				// running lifecycle method
+				Stack<InvokMethodInfo> invokestack = new Stack<InvokMethodInfo>();
+				aliasTreeList = new ArrayList<AliasTree> ();
+				BuildCallGraph.processCfgTimes=0;
+				if (!mName.equals("ActivityRunning")) {
+					// Traverse the CFG of method
+					for (EntityMethod eMethod : eclass.getMethodList()) {
+						if(eMethod.getMethodName().equals(mName)&&mName.equals("onActivityResult")){
+							System.out.println();
+						}
+						// start form lifecycle method ----onCreate
+						if (eMethod.getMethodName().equals(mName)) {
+							SootMethod sm = eMethod.getCfgUnit().getBody().getMethod();
+							if (sm == null)
+								continue;
+							if (sm.isAbstract()|| sm.getDeclaringClass().isInterface()|| sm.isPrivate())
+								continue;
+							UnitGraph uGraph = eMethod.getCfgUnit();
+							processCfg.TraverseCfg(easyTaintWrapper,uGraph, eMethod, eclass, classList,
+									taintedLocalVariables, null,invokestack);
+							break;
+						}
+					}
+				} 
+				else {// running callback method
+					switch(callbackPolicy){
+					case ArbitrarySequence:
+						 if (comCallbackMap != null) 
+							// get all combination of callback methods
+							eclass.callbackSeq= eclass.getGetCallBack().getArbitraryCallbackSequence();
+						 if(eclass.callbackSeq==null) continue;
+						 for (List<EntityMethod> se : eclass.callbackSeq){
+							for (EntityMethod eMethod : se) {
+								SootMethod sm = eMethod.getCfgUnit().getBody().getMethod();
+								if (sm == null)
+									continue;
+								if (sm.isAbstract()|| sm.getDeclaringClass().isInterface()|| sm.isPrivate())
+									continue;
+								UnitGraph uGraph = eMethod.getCfgUnit();
+								processCfg.TraverseCfg(easyTaintWrapper,uGraph, eMethod, eclass, classList,
+										taintedLocalVariables, null,invokestack);
+							}
+							break;
+						 }
+					break;
+					case TwoRoundChecking:
+						 Map<EntityClass, Set<EntityMethod>> ComponentCallBacks=eclass.getGetCallBack().getCallBackSet();		 
+						 Collection<Set<EntityMethod>> connection = ComponentCallBacks.values();
+						 Iterator<Set<EntityMethod>> iterator = connection.iterator();
+							// store all callback methods in methodSet
+							Set<EntityMethod> methodSet = new HashSet<>();
+							while (iterator.hasNext()) {
+								methodSet.addAll(iterator.next());
+							}
+						 ClassVarsStore classstoreBefore = new ClassVarsStore(classvarstore);
+						 HashMap<EntityMethod,ClassVarsStore> tmpclassstoreMaps = new  HashMap<EntityMethod,ClassVarsStore>();
+						 for(EntityMethod eMethod:methodSet) {//first round
+							 UnitGraph uGraph = eMethod.getCfgUnit();
+							 processCfg.TraverseCfg(easyTaintWrapper,uGraph, eMethod, eclass, 
+										classList,taintedLocalVariables,null, invokestack);
+							 ClassVarsStore classstoreAfterOnecallbackMethod = new ClassVarsStore(classvarstore);
+							 tmpclassstoreMaps.put(eMethod, classstoreAfterOnecallbackMethod);
+							 classvarstore.assign(classstoreBefore);
+						 }
+						 for(EntityMethod eMethodTest:methodSet) {//Second Round
+							 classvarstore.assign(classstoreBefore);
+							 for(EntityMethod eMethodOthers:methodSet){
+								 if(!eMethodOthers.getMethodName().equals(eMethodTest.getMethodName())) {
+									 ClassVarsStore classstoreAfterOnecallbackMethod = tmpclassstoreMaps.get(eMethodOthers);
+									 classvarstore.merge(classstoreAfterOnecallbackMethod);
+								 }
+							 }
+							 UnitGraph uGraph = eMethodTest.getCfgUnit();
+							 processCfg.TraverseCfg(easyTaintWrapper,uGraph, eMethodTest, eclass, 
+										classList,taintedLocalVariables,null, invokestack);
+						 }
+				        break;
+					default:
+						break;
+					}
+				}
+			}
+		}
+		DFSRunChildrens(eclass,hop);
+	}
+	private void DFSRunChildrens(EntityClass eclass,int hop) throws IOException {
+		Set<ComponentInvokeGraphNodeIntentPair> childrens = eclass.getComponentInvokeGraph().childrenNodes;
+		if(childrens!=null) {
+			Set<ComponentInvokeGraphNodeIntentPair> tmp = new HashSet<ComponentInvokeGraphNodeIntentPair>();
+			tmp.addAll(childrens);
+			for(ComponentInvokeGraphNodeIntentPair c:tmp) {
+					ComponentInvokeGraphNode cNode=c.getComponentInvokeTreeNode();
+					int num=0;
+					for(int i=0;i<visitedEntityComponents.size();i++) {
+						if(visitedEntityComponents.get(i).equals(cNode.eclass.getclassName())) {
+							num++;
+						}
+					}
+					if(num>2) //get rid of the recursive visited the in some components;
+						return;
+					else 
+						runCurrentClass(cNode.eclass,hop+1);					
+			}
+		}
+	}
+}

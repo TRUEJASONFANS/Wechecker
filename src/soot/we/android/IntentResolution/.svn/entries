@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   url="https://new-wechecker.googlecode.com/svn/trunk/WeChecker/src/soot/we/android/IntentResolution"
+   repos="https://new-wechecker.googlecode.com/svn"
+   kind="dir"
+   committed-rev="180"
+   last-author="truejasonxiefans@gmail.com"
+   name=""
+   revision="180"
+   committed-date="2014-05-27T08:06:36.937000Z"/>
+<entry
+   kind="file"
+   committed-rev="215"
+   checksum="e81e792cf5785829142f12c9c39ad7c7"
+   last-author="truejasonxiefans@gmail.com"
+   name="ComponentInvokeGraph.java"
+   revision="215"
+   text-time="2014-06-09T16:10:09.805000Z"
+   committed-date="2014-06-10T06:16:23.427000Z"/>
+<entry
+   kind="file"
+   committed-rev="215"
+   checksum="66f5b006f9b8ef3f3908882e9fb6211c"
+   last-author="truejasonxiefans@gmail.com"
+   name="ComponentInvokeGraphNode.java"
+   revision="215"
+   text-time="2014-06-08T05:39:27.748000Z"
+   committed-date="2014-06-10T06:16:23.427000Z"/>
+<entry
+   kind="file"
+   committed-rev="215"
+   checksum="763775decab58bf399bbdcb6d0be88b9"
+   last-author="truejasonxiefans@gmail.com"
+   name="ComponentInvokeGraphNodeIntentPair.java"
+   revision="215"
+   text-time="2014-06-05T14:23:25.219000Z"
+   committed-date="2014-06-10T06:16:23.427000Z"/>
+<entry
+   kind="file"
+   schedule="delete"
+   committed-rev="188"
+   checksum="6ee1a912f1a647c494daad7973820eb4"
+   last-author="truejasonxiefans@gmail.com"
+   name="ComponentInvokeTreeNode.java"
+   revision="188"
+   text-time="2014-05-31T05:53:27.757000Z"
+   committed-date="2014-06-04T12:00:53.904000Z"/>
+<entry
+   kind="file"
+   schedule="delete"
+   committed-rev="188"
+   checksum="c79d40c4c352bbdd1d10fbd8821d7d5c"
+   last-author="truejasonxiefans@gmail.com"
+   name="ComponentInvokeTreeNodeIntentPair.java"
+   revision="188"
+   text-time="2014-05-31T07:06:29.410000Z"
+   committed-date="2014-06-04T12:00:53.904000Z"/>
+<entry
+   kind="file"
+   schedule="delete"
+   committed-rev="180"
+   checksum="4582d76b2d7abe5d67fbc5532d55744b"
+   last-author="truejasonxiefans@gmail.com"
+   name="ComponentInvokeTrees.java"
+   text-time="2014-05-26T18:21:53.385000Z"
+   committed-date="2014-05-27T08:06:36.937000Z"/>
+<entry
+   kind="file"
+   committed-rev="180"
+   checksum="bfcbd3847bab618f81c7467b79905877"
+   last-author="truejasonxiefans@gmail.com"
+   name="IntentFinder.java"
+   text-time="2014-05-26T08:20:02.455000Z"
+   committed-date="2014-05-27T08:06:36.937000Z"/>
+<entry
+   kind="file"
+   committed-rev="188"
+   checksum="aeac42cfd31541959b2d3f35c4631bf4"
+   last-author="truejasonxiefans@gmail.com"
+   name="IntentValue.java"
+   revision="188"
+   text-time="2014-05-31T07:06:36.902000Z"
+   committed-date="2014-06-04T12:00:53.904000Z"/>
+<entry
+   kind="file"
+   committed-rev="188"
+   checksum="c8212a8c505eacc0d264ee7f5ac33ac1"
+   last-author="truejasonxiefans@gmail.com"
+   name="TaintedIntent.java"
+   revision="188"
+   text-time="2014-05-31T17:24:27.459000Z"
+   committed-date="2014-06-04T12:00:53.904000Z"/>
+</wc-entries>

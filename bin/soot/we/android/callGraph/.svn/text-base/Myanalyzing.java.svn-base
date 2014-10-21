@@ -1,0 +1,199 @@
+package soot.we.android.callGraph;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import soot.Body;
+import soot.Local;
+import soot.RefType;
+import soot.Scene;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Type;
+import soot.Unit;
+import soot.Value;
+import soot.jimple.DefinitionStmt;
+import soot.jimple.IdentityStmt;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.ReturnVoidStmt;
+import soot.jimple.Stmt;
+import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.scalar.SimpleLiveLocals;
+import soot.toolkits.scalar.SmartLocalDefs;
+
+public class Myanalyzing {
+
+	Set<String> androidCallbacks = new HashSet<String>();
+	private final Map<String, Set<AndroidMethod>> callbackMethods = new HashMap<String, Set<AndroidMethod>>();
+	private final Map<String, Set<AndroidMethod>> callbackWorklist = new HashMap<String, Set<AndroidMethod>>();
+	
+
+	/**
+	 * Analyzes the given method and looks for callback registrations
+	 * 
+	 * @param lifecycleElement
+	 *            The lifecycle element (activity, etc.) with which to associate
+	 *            the found callbacks
+	 * @param method
+	 *            The method in which to look for callbacks
+	 */
+	private void analyzeMethodForCallbackRegistrations(SootClass lifecycleElement, SootMethod method) {
+		// Do not analyze system classes
+		if (method.getDeclaringClass().getName().startsWith("android.")
+				|| method.getDeclaringClass().getName().startsWith("java."))
+			return;
+		if (!method.isConcrete())
+			return;
+		
+		ExceptionalUnitGraph graph = new ExceptionalUnitGraph(method.retrieveActiveBody());
+		SmartLocalDefs smd = new SmartLocalDefs(graph, new SimpleLiveLocals(graph));
+
+		// Iterate over all statement and find callback registration methods
+		Set<SootClass> callbackClasses = new HashSet<SootClass>();
+		for (Unit u : method.retrieveActiveBody().getUnits()) {
+			Stmt stmt = (Stmt) u;
+			// Callback registrations are always instance invoke expressions
+			if (stmt.containsInvokeExpr() && stmt.getInvokeExpr() instanceof InstanceInvokeExpr) {
+				InstanceInvokeExpr iinv = (InstanceInvokeExpr) stmt.getInvokeExpr();
+				for (int i = 0; i < iinv.getArgCount(); i++) {
+					Value arg = iinv.getArg(i);
+					Type argType = iinv.getArg(i).getType();  //参数类型
+					Type paramType = iinv.getMethod().getParameterType(i);
+					if (paramType instanceof RefType && argType instanceof RefType) {
+						if (androidCallbacks.contains(((RefType) paramType).getSootClass().getName())) {
+							// We have a formal parameter type that corresponds to one of the Android
+							// callback interfaces. Look for definitions of the parameter to estimate
+							// the actual type.
+							if (arg instanceof Local)
+								for (Unit def : smd.getDefsOfAt((Local) arg, u)) {
+									assert def instanceof DefinitionStmt; 
+									Type tp = ((DefinitionStmt) def).getRightOp().getType();
+									if (tp instanceof RefType) {
+										SootClass callbackClass = ((RefType) tp).getSootClass();
+										if (callbackClass.isInterface())
+											for (SootClass impl : Scene.v().getActiveHierarchy().getImplementersOf(callbackClass))
+												for (SootClass c : Scene.v().getActiveHierarchy().getSubclassesOfIncluding(impl))
+													callbackClasses.add(c);
+										else
+											for (SootClass c : Scene.v().getActiveHierarchy().getSubclassesOfIncluding(callbackClass))
+												callbackClasses.add(c);
+									}
+								}
+						}
+					}
+				}
+			}
+		}
+		
+		// Analyze all found callback classes
+		for (SootClass callbackClass : callbackClasses)
+			analyzeClass(callbackClass, lifecycleElement);
+	}
+
+	private void analyzeClass(SootClass sootClass, SootClass lifecycleElement) {
+		// Do not analyze system classes
+		if (sootClass.getName().startsWith("android.")
+				|| sootClass.getName().startsWith("java."))
+			return;
+
+		// Check for callback handlers implemented via interfaces
+		analyzeClassInterfaceCallbacks(sootClass, sootClass, lifecycleElement);
+	}
+
+	private void analyzeClassInterfaceCallbacks(SootClass baseClass,
+			SootClass sootClass, SootClass lifecycleElement) {
+		// We cannot create instances of abstract classes anyway, so there is no
+		// reason to look for interface implementations
+		if (!baseClass.isConcrete())
+			return;
+
+		// For a first take, we consider all classes in the android.* packages
+		// to be part of the operating system
+		if (baseClass.getName().startsWith("android."))
+			return;
+
+		// If we are a class, one of our superclasses might implement an Android
+		// interface
+		if (sootClass.hasSuperclass())
+			analyzeClassInterfaceCallbacks(baseClass,
+					sootClass.getSuperclass(), lifecycleElement);
+
+		// Do we implement one of the well-known interfaces?
+		for (SootClass i : collectAllInterfaces(sootClass)) {
+			if (androidCallbacks.contains(i.getName()))
+				for (SootMethod sm : i.getMethods())
+					checkAndAddMethod(
+							getMethodFromHierarchyEx(baseClass,
+									sm.getSubSignature()), lifecycleElement);
+		}
+
+	}
+
+	private Set<SootClass> collectAllInterfaces(SootClass sootClass) {
+		Set<SootClass> interfaces = new HashSet<SootClass>(
+				sootClass.getInterfaces());
+		for (SootClass i : sootClass.getInterfaces())
+			interfaces.addAll(collectAllInterfaces(i));
+		return interfaces;
+	}
+
+	private SootMethod getMethodFromHierarchyEx(SootClass c,
+			String methodSignature) {
+		if (c.declaresMethod(methodSignature))
+			return c.getMethod(methodSignature);
+		if (c.hasSuperclass())
+			return getMethodFromHierarchyEx(c.getSuperclass(), methodSignature);
+		throw new RuntimeException("Could not find method");
+	}
+
+	/**
+	 * Checks whether the given Soot method comes from a system class. If not,
+	 * it is added to the list of callback methods.
+	 * 
+	 * @param method
+	 *            The method to check and add
+	 * @param baseClass
+	 *            The base class (activity, service, etc.) to which this
+	 *            callback method belongs
+	 */
+	private void checkAndAddMethod(SootMethod method, SootClass baseClass) {
+		AndroidMethod am = new AndroidMethod(method);
+
+		// Do not call system methods
+		if (am.getClassName().startsWith("android.")
+				|| am.getClassName().startsWith("java."))
+			return;
+
+		// Skip empty methods
+		if (method.isConcrete() && isEmpty(method.retrieveActiveBody()))
+			return;
+
+		boolean isNew;
+		if (this.callbackMethods.containsKey(baseClass.getName()))
+			isNew = this.callbackMethods.get(baseClass.getName()).add(am);
+		else {
+			Set<AndroidMethod> methods = new HashSet<AndroidMethod>();
+			isNew = methods.add(am);
+			this.callbackMethods.put(baseClass.getName(), methods);
+		}
+
+		if (isNew)
+			if (this.callbackWorklist.containsKey(baseClass.getName()))
+				this.callbackWorklist.get(baseClass.getName()).add(am);
+			else {
+				Set<AndroidMethod> methods = new HashSet<AndroidMethod>();
+				isNew = methods.add(am);
+				this.callbackWorklist.put(baseClass.getName(), methods);
+			}
+	}
+
+	private boolean isEmpty(Body activeBody) {
+		for (Unit u : activeBody.getUnits())
+			if (!(u instanceof IdentityStmt || u instanceof ReturnVoidStmt))
+				return false;
+		return true;
+	}
+	
+}

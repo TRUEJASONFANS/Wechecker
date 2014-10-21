@@ -1,0 +1,29 @@
+package soot.we.android.IntentResolution;
+
+import soot.Value;
+import soot.we.android.component.EntityClass;
+
+public class ComponentInvokeTreeNodeIntentPair{
+	private ComponentInvokeTreeNode componentInvokeTreeNode;
+	private IntentValue intent;
+	public ComponentInvokeTreeNodeIntentPair(EntityClass teclass, Value v,String methodname,String classname) {
+		componentInvokeTreeNode = new ComponentInvokeTreeNode(teclass);
+		IntentValue tv = new IntentValue(v, methodname, classname);
+		setIntent(tv);
+	}
+
+	public ComponentInvokeTreeNode getComponentInvokeTreeNode() {
+		return componentInvokeTreeNode;
+	}
+	public void setComponentInvokeTreeNode(ComponentInvokeTreeNode componentInvokeTreeNode) {
+		this.componentInvokeTreeNode = componentInvokeTreeNode;
+	}
+	public IntentValue getIntent() {
+		return intent;
+	}
+
+	public void setIntent(IntentValue intent) {
+		this.intent = intent;
+	}
+	
+}

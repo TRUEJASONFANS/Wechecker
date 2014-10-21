@@ -1,0 +1,74 @@
+package soot.we.android;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import Test.test;
+import soot.we.android.IntentResolution.IntentFinder;
+import soot.we.android.XML.ProcessLayout;
+import soot.we.android.callGraph.AndroidMethod;
+import soot.we.android.callGraph.BuildCallGraph;
+import soot.we.android.callGraph.EasyTaintWrapper;
+import soot.we.android.callGraph.SourceSinkFinder;
+import soot.we.android.component.EntityClass;
+import soot.we.android.component.GetCompJimpleClass;
+import soot.we.android.log.AlarmForCommonUser;
+import soot.we.android.resource.LayoutControl;
+import soot.we.android.test.Test;
+
+public class MainThread {
+	public static List<EntityClass> classList = new ArrayList<EntityClass>();
+	public static Map<String, AndroidMethod> sourceMethods;
+	public static Map<String, AndroidMethod> sinkMethods;
+	public static Map<String, AndroidMethod> intentRelatedMethods;
+	public static Map<String, String> FriendlyAlarmMap;
+	public static List<Integer> sensitivelayouts;
+
+	public static void run(String[] args) throws IOException {
+		//get alarm statements for common users
+		FriendlyAlarmMap = AlarmForCommonUser.getCommonAlarm("Friendly alert.txt");
+		if(FriendlyAlarmMap==null){
+			System.err.println("no found 'Friendly alert.txt' file!");
+		}
+		
+		//get LayoutControls<ID,Property>
+		sensitivelayouts = ProcessLayout.getLayoutControls(Test.apkpath,Test.sdkPlatform, Test.app);
+		if(sensitivelayouts==null||sensitivelayouts.size()==0){
+			System.err.println("no sensitive layouts!");
+		}
+		// *********get all Cfg of method in classes*******
+		GetCompJimpleClass getjimpleclass = new GetCompJimpleClass();
+		classList = getjimpleclass.run();
+//		for(EntityClass ec: classList){
+//			System.out.println("ClassName: "+ec.getclassName());
+//			System.out.println("Entry? "+ec.isEntryPointClass());
+//		}
+		
+
+		// **************end*************
+		for (int i = 0; i < classList.size(); i++) {
+			if (classList.get(i).isEntryPointClass())
+				System.out.println("entrypoint: "+classList.get(i).getclassName());
+		}
+	
+		// ***********Setup the list of Source And Sink methods
+		SourceSinkFinder ssfinder = new SourceSinkFinder();
+		ssfinder.calculateSourcesSinksEntrypoints("SourcesAndSInks.txt");
+		sourceMethods = ssfinder.getSourceMethods();
+		sinkMethods = ssfinder.getSinkMethods();
+		intentRelatedMethods = new IntentFinder().intentRelatedMethods;
+		EasyTaintWrapper easyWrapper = new EasyTaintWrapper(new File("EasyTaintWrapperSource.txt"));
+		// ***************end****************
+		// **************build call graph*********
+		BuildCallGraph buildCallGraph = new BuildCallGraph(classList,1);
+		buildCallGraph.setEasyTaintWrapper(easyWrapper);
+		buildCallGraph.run();
+		// ***************end**************
+
+	}
+}

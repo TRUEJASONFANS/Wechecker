@@ -1,0 +1,33 @@
+package soot.we.android.component;
+
+import soot.SootMethod;
+import soot.toolkits.graph.UnitGraph;
+
+public class EntityMethod {
+	private String methodName;
+	private UnitGraph cfgUnit;
+    public  SootMethod sootmethod;
+	public UnitGraph getCfgUnit() {
+		return cfgUnit;
+	}
+
+	public void setCfgUnit(UnitGraph cfgUnit) {
+		this.cfgUnit = cfgUnit;
+	}
+
+	public String getMethodName() {
+		return methodName;
+	}
+
+	public void setMethodName(String methodName) {
+		this.methodName = methodName;
+	}
+
+	public EntityMethod(String methodName, UnitGraph cfgUnit) {
+		super();
+		this.methodName = methodName;
+		this.cfgUnit = cfgUnit;
+	}
+
+	
+}
